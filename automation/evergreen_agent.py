@@ -51,7 +51,9 @@ UNSPLASH_KEY         = os.getenv("UNSPLASH_ACCESS_KEY", "")
 # Default to a stable, dated Claude model ID (— most reliable, no alias resolution).
 # Override with CLAUDE_MODEL env var or workflow_dispatch input.
 CLAUDE_MODEL         = os.getenv("CLAUDE_MODEL", "claude-3-5-haiku-20241022")
-MAX_TOKENS           = int(os.getenv("MAX_TOKENS", "4096"))
+# 8192 gives plenty of headroom for a 1600-word body + all metadata fields.
+# (Claude Haiku 4.5 supports up to 64K output tokens.)
+MAX_TOKENS           = int(os.getenv("MAX_TOKENS", "8192"))
 AMAZON_TAG           = os.getenv("AMAZON_ASSOCIATE_ID", "edudhruv-20")
 
 # ─── TOPIC BANK ───────────────────────────────────────────────────────────
@@ -395,8 +397,8 @@ POST_SCHEMA = {
         },
         "body": {
             "type": "string",
-            "description": "REQUIRED: The MAIN ARTICLE BODY as a single HTML string. MUST be 1200-1600 words. MUST include 3+ <h2> subheadings. MUST include a Frequently Asked Questions section at the end with 3+ <h3> questions each followed by a <p> answer. Use <ul>/<li>, <strong>, and at least one internal link <a href=\"/education-loan/\">education loan</a>. Do NOT include the intro paragraphs again — only the body content AFTER the intro.",
-            "minLength": 1500,
+            "description": "REQUIRED — THE LONGEST FIELD BY FAR (must be 5000-8000 characters, ~1200-1600 words). This is the MAIN article body as a single HTML string. Structure: start with <h2>section heading</h2>, then 3-4 <p> paragraphs, repeat for 4-6 different sections covering different aspects of the topic. Use <ul><li>...</li></ul> for lists, <strong> for emphasis. End with <h2>Frequently Asked Questions</h2> followed by 4+ <h3>question</h3><p>answer</p> pairs. Include at least one internal link <a href=\"/education-loan/\">education loan</a>. Reference specific 2025/2026 data points. Do NOT include the intro paragraphs again — only the substantive body content AFTER the intro.",
+            "minLength": 4500,
         },
         "tags": {
             "type": "array",
@@ -421,68 +423,105 @@ def generate_post(topic: str, category_name: str) -> dict:
     Guaranteed valid JSON because Claude returns it as a tool invocation
     instead of free-form text.
     """
-    prompt = f"""Write a comprehensive blog post for EduDhruv.com on: "{topic}"
+    prompt = f"""Write a long-form blog post for EduDhruv.com on: "{topic}"
 Category: {category_name}
 
-You MUST call the `publish_blog_post` tool with ALL of these required fields:
+You MUST call the `publish_blog_post` tool with ALL 10 required fields:
 title, slug, meta_title, meta_description, focus_keyword, excerpt, intro, body, tags, reading_time.
 
-CRITICAL — the `body` field is the longest one. It MUST:
-- Be 1200-1600 words of HTML
-- Start with a <h2> heading (not <p>)
-- Contain at least 3 <h2> subheadings
-- End with a Frequently Asked Questions section: <h2>Frequently Asked Questions</h2> followed by 3+ <h3>question</h3><p>answer</p> pairs
-- Include at least one internal link: <a href="/education-loan/">education loan</a>
-- Reference 2025/2026 data points
-- NOT repeat the intro (the intro field is rendered separately)
+═══ THE BODY FIELD IS CRITICAL ═══
 
-CRITICAL — slug: lowercase, hyphens only, no special chars (e.g. "cost-of-living-germany-2026").
+The `body` field MUST be 5000-8000 characters (≈ 1200-1600 words) of HTML.
+If your body is shorter than 4500 characters, the article will be REJECTED.
 
-Call publish_blog_post NOW with all 10 fields populated. Don't skip any."""
+Structure your body like this (and verify length BEFORE submitting):
+
+<h2>First major section title</h2>
+<p>Paragraph 1 (3-5 sentences with specific facts, numbers, examples)</p>
+<p>Paragraph 2 (3-5 sentences)</p>
+<p>Paragraph 3 (3-5 sentences)</p>
+
+<h2>Second major section title</h2>
+<p>Paragraph...</p>
+<ul>
+  <li><strong>Point 1:</strong> Detailed explanation</li>
+  <li><strong>Point 2:</strong> Detailed explanation</li>
+  <li><strong>Point 3:</strong> Detailed explanation</li>
+</ul>
+<p>More detail...</p>
+
+<h2>Third major section title</h2>
+<p>...with internal link: <a href="/education-loan/">education loan</a>...</p>
+
+<h2>Fourth major section</h2>
+<p>...</p>
+
+<h2>Frequently Asked Questions</h2>
+<h3>Question 1?</h3>
+<p>Detailed answer (3-4 sentences).</p>
+<h3>Question 2?</h3>
+<p>Detailed answer.</p>
+<h3>Question 3?</h3>
+<p>Detailed answer.</p>
+<h3>Question 4?</h3>
+<p>Detailed answer.</p>
+
+═══ OTHER REQUIREMENTS ═══
+
+- Include 2025/2026 statistics, real bank names, real visa subclass numbers, real fees in INR
+- Indian audience — use Indian Rupee equivalents and Indian-context examples
+- slug: lowercase, hyphens only, no special chars, max 80 chars
+- intro: 2 short <p> paragraphs (2-4 sentences each) — separate from body
+- excerpt: plain text, 2 sentences, ≤300 chars
+- meta_description: 140-160 chars including primary keyword
+
+Now generate and call publish_blog_post with ALL 10 fields populated."""
 
     return claude_structured(SYSTEM_PROMPT, prompt, POST_SCHEMA)
 
 
 # ─── PUBLISH TO SUPABASE ──────────────────────────────────────────────────
 
+MIN_BODY_WORDS = 600   # below this we treat the post as broken and skip publishing
+
 def publish_post(post_data: dict, category_slug: str, image: dict | None) -> dict:
     # Log what fields we actually got from Claude (helps diagnose missing data)
     log.info(f"  Claude returned keys: {sorted(post_data.keys())}")
 
-    # Required: title and slug — can't publish without them
     if not post_data.get("title"):
         raise ValueError(f"Claude omitted 'title'. Got: {list(post_data.keys())}")
     if not post_data.get("slug"):
         raise ValueError(f"Claude omitted 'slug'. Got: {list(post_data.keys())}")
 
-    # Body might come back as 'body' OR 'content' OR 'article_body' depending on model
-    # Try multiple key names; fall back to building from intro alone if absent
+    # Body might come back under different names depending on model
     body = (
         post_data.get("body")
         or post_data.get("content")
         or post_data.get("article_body")
         or post_data.get("article")
         or ""
-    )
-    intro = post_data.get("intro") or post_data.get("introduction") or ""
+    ).strip()
+    intro = (post_data.get("intro") or post_data.get("introduction") or "").strip()
 
-    if not body and not intro:
-        raise ValueError(f"Claude returned no body or intro. Got: {list(post_data.keys())}")
+    # Validate body has substantial content (Claude sometimes returns intro only)
+    import re as _re
+    plain_body = _re.sub(r"<[^>]+>", "", body)
+    body_words = len(plain_body.split())
 
-    full_content = intro
+    log.info(f"  Body: {len(body)} chars, {body_words} words")
+    log.info(f"  Intro: {len(intro)} chars")
 
-    if image:
-        full_content += (
-            f'\n<figure style="margin:28px 0;">'
-            f'<img src="{image["url"]}" alt="{image["alt"]}" loading="lazy" '
-            f'style="max-width:100%;border-radius:8px;" />'
-            f'<figcaption>{image["credit"]}</figcaption></figure>'
+    if body_words < MIN_BODY_WORDS:
+        raise ValueError(
+            f"Body too short ({body_words} words, need {MIN_BODY_WORDS}+). "
+            f"Claude returned: {list(post_data.keys())}. "
+            f"Body preview: {body[:200]!r}"
         )
 
-    if body:
-        full_content += "\n" + body
-
-    log.info(f"  Total content: {len(full_content)} chars, intro={len(intro)}, body={len(body)}")
+    # IMPORTANT: do NOT embed the featured image into content.
+    # The blog post page renders featured_image_url separately at the top.
+    # Embedding it again here causes the image to appear twice.
+    full_content = intro + "\n" + body if intro else body
 
     record = {
         "title":                 post_data["title"],
