@@ -10,7 +10,7 @@ on:
       model:
         description: "Claude model (optional override)"
         required: false
-        default: "claude-3-5-haiku-20241022"
+        default: "claude-haiku-4-5"
 
 jobs:
   publish:
@@ -36,6 +36,9 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY:  ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           UNSPLASH_ACCESS_KEY:        ${{ secrets.UNSPLASH_ACCESS_KEY }}
           AMAZON_ASSOCIATE_ID:        edudhruv-20
-          # Default to claude-3-5-haiku-20241022; manual runs can override
-          CLAUDE_MODEL:               ${{ inputs.model || 'claude-3-5-haiku-20241022' }}
+          # Default Haiku 4.5 — verified working on this account
+          CLAUDE_MODEL:               ${{ inputs.model || 'claude-haiku-4-5' }}
+          # On-demand Vercel cache revalidation after publishing a new post
+          SITE_URL:                   ${{ secrets.SITE_URL }}
+          REVALIDATE_SECRET:          ${{ secrets.REVALIDATE_SECRET }}
         run: python automation/evergreen_agent.py

@@ -8,7 +8,10 @@ import HeroBanner from "@/components/home/HeroBanner";
 import CategorySection from "@/components/home/CategorySection";
 import RotatingBanner, { ListMyAIBanner, ThinkingLenzBanner } from "@/components/ads/RotatingBanner";
 
-export const revalidate = 3600;
+// Revalidate every 5 min as a fallback. The blog agent ALSO calls
+// /api/revalidate immediately after publishing, so new posts appear
+// instantly — this is just a safety net.
+export const revalidate = 300;
 
 const SPONSORED_SLIDES: never[] = [];
 const HOMEPAGE_CATEGORIES = [

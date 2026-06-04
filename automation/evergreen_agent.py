@@ -517,6 +517,35 @@ def mark_topic_used(category_slug: str, topic: str, post_slug: str):
         log.warning(f"Could not save agent state: {e}")
 
 
+def trigger_vercel_revalidation(category_slug: str, post_slug: str):
+    """
+    Tell Vercel to immediately refresh the homepage + category page + new post page,
+    so the post appears live without waiting for ISR (1 hour) to expire.
+    """
+    site_url = os.getenv("SITE_URL", "").rstrip("/")
+    secret   = os.getenv("REVALIDATE_SECRET", "")
+    if not site_url or not secret:
+        log.info("  (skipping revalidation — SITE_URL or REVALIDATE_SECRET not set)")
+        return
+
+    try:
+        payload = json.dumps({"slug": post_slug, "category": category_slug}).encode()
+        req = urllib.request.Request(
+            f"{site_url}/api/revalidate",
+            data=payload,
+            method="POST",
+            headers={
+                "Content-Type":          "application/json",
+                "x-revalidate-secret":   secret,
+            },
+        )
+        with urllib.request.urlopen(req, timeout=10) as res:
+            data = json.loads(res.read())
+        log.info(f"  ✓ Revalidated: {', '.join(data.get('revalidated', []))}")
+    except Exception as e:
+        log.warning(f"  Could not revalidate Vercel cache: {e}")
+
+
 # ─── MAIN ─────────────────────────────────────────────────────────────────
 
 def main():
@@ -569,6 +598,11 @@ def main():
 
     # Mark topic used
     mark_topic_used(category_slug, topic, post_slug)
+
+    # Trigger Vercel cache revalidation so the post appears IMMEDIATELY
+    # on the homepage and category page (instead of waiting for ISR).
+    log.info("Triggering Vercel revalidation...")
+    trigger_vercel_revalidation(category_slug, post_slug)
 
     log.info(f"✅ Published: {post_data['title']}")
     log.info(f"   URL: https://www.edudhruv.com/{category_slug}/{post_slug}")
