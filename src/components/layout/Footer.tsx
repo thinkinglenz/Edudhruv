@@ -41,11 +41,12 @@ export default function Footer() {
           <h3 className="text-white font-semibold mb-3 text-sm uppercase tracking-wider">Quick Links</h3>
           <ul className="space-y-2 text-sm">
             {[
-              ["Free Consultation", "/loan-portal"],
-              ["About EduDhruv", "/about"],
-              ["Contact Us", "/contact"],
-              ["Privacy Policy", "/privacy-policy"],
-              ["Terms & Conditions", "/terms-and-conditions"],
+              ["Free Consultation",     "/loan-portal"],
+              ["About EduDhruv",         "/about"],
+              ["Advertise with us",      "/advertise"],
+              ["Contact Us",             "/contact"],
+              ["Privacy Policy",         "/privacy-policy"],
+              ["Terms & Conditions",     "/terms-and-conditions"],
             ].map(([label, href]) => (
               <li key={href}>
                 <Link href={href} className="hover:text-white transition-colors">{label}</Link>

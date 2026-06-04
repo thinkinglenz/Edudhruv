@@ -1,9 +1,9 @@
 name: Evergreen Blog Agent
 
 on:
-  # Run every 4 hours
+  # Run every 12 hours — 2 posts per day (00:00 and 12:00 UTC)
   schedule:
-    - cron: "0 */4 * * *"
+    - cron: "0 */12 * * *"
   # Allow manual trigger
   workflow_dispatch:
     inputs:
