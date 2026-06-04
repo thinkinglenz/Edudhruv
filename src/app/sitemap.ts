@@ -9,9 +9,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: BASE, changeFrequency: "daily", priority: 1.0 },
-    { url: `${BASE}/loan-portal`, changeFrequency: "monthly", priority: 0.9 },
-    { url: `${BASE}/about`, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${BASE}/contact`, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${BASE}/about`,                changeFrequency: "monthly", priority: 0.6 },
+    { url: `${BASE}/contact`,              changeFrequency: "monthly", priority: 0.5 },
+    { url: `${BASE}/privacy-policy`,       changeFrequency: "yearly",  priority: 0.3 },
+    { url: `${BASE}/terms-and-conditions`, changeFrequency: "yearly",  priority: 0.3 },
+    // /loan-portal deliberately excluded — it's a user dashboard (noindex)
+    // /admin deliberately excluded — admin panel (noindex)
   ];
 
   const categoryPages: MetadataRoute.Sitemap = CATEGORIES.map((cat) => ({

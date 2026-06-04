@@ -37,6 +37,42 @@ const nextConfig = {
         source: "/ads.txt",
         headers: [{ key: "Content-Type", value: "text/plain" }],
       },
+      // ─── Admin panel — block ALL search engines ─────────────────
+      // X-Robots-Tag works even if bots ignore robots.txt or run JS
+      {
+        source: "/admin/:path*",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive, nosnippet, noimageindex" },
+          { key: "Cache-Control", value: "no-store, no-cache, must-revalidate, private" },
+        ],
+      },
+      {
+        source: "/admin",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive, nosnippet, noimageindex" },
+          { key: "Cache-Control", value: "no-store, no-cache, must-revalidate, private" },
+        ],
+      },
+      // ─── API routes — block crawling ──────────────────────────────
+      {
+        source: "/api/:path*",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
+      // ─── Loan portal — user dashboard, don't index ────────────────
+      {
+        source: "/loan-portal/:path*",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
+      {
+        source: "/loan-portal",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
     ];
   },
 
