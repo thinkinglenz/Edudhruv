@@ -44,6 +44,7 @@ export default function Footer() {
               ["Free Consultation",     "/loan-portal"],
               ["About EduDhruv",         "/about"],
               ["Advertise with us",      "/advertise"],
+              ["Editorial Standards",    "/editorial-standards"],
               ["Contact Us",             "/contact"],
               ["Privacy Policy",         "/privacy-policy"],
               ["Terms & Conditions",     "/terms-and-conditions"],

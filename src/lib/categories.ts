@@ -43,13 +43,16 @@ export const CATEGORIES: Category[] = [
     color: "bg-yellow-100 text-yellow-700",
     icon: "🧳",
   },
-  {
-    slug: "latest",
-    name: "Latest",
-    description: "Latest news and updates from the study abroad world.",
-    color: "bg-red-100 text-red-700",
-    icon: "📰",
-  },
+  // NOTE: "latest" category is deliberately hidden during AdSense review.
+  // Re-add this object when you want it back, after approval.
+  //
+  // {
+  //   slug: "latest",
+  //   name: "Latest",
+  //   description: "Latest news and updates from the study abroad world.",
+  //   color: "bg-red-100 text-red-700",
+  //   icon: "📰",
+  // },
 ];
 
 export const CATEGORY_SLUGS = CATEGORIES.map((c) => c.slug);

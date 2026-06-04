@@ -19,7 +19,17 @@ export const metadata: Metadata = {
     images: [{ url: "/logo.jpg", width: 300, height: 80, alt: "EduDhruv" }],
   },
   twitter: { card: "summary_large_image" },
-  verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION },
+  // Site ownership verifications for Google Search Console & AdSense.
+  // Both can use the same content meta tag if "google-site-verification" is set.
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+    other: {
+      // AdSense specific verification meta tag (optional but helps speed up approval)
+      ...(process.env.NEXT_PUBLIC_ADSENSE_VERIFICATION && {
+        "google-adsense-account": process.env.NEXT_PUBLIC_ADSENSE_VERIFICATION,
+      }),
+    },
+  },
 };
 
 const ORG_SCHEMA = {
@@ -41,6 +51,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://pagead2.googlesyndication.com" />
+
+        {/* AdSense account verification — required for site approval */}
+        <meta name="google-adsense-account" content={ADSENSE_ID} />
       </head>
       <body>
         {/* SiteShell shows Header+Footer on public routes, raw on /admin */}

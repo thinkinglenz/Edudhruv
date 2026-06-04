@@ -1,9 +1,15 @@
 name: Evergreen Blog Agent
 
 on:
-  # Run every 12 hours — 2 posts per day (00:00 and 12:00 UTC)
-  schedule:
-    - cron: "0 */12 * * *"
+  # ⏸ PAUSED DURING ADSENSE REVIEW
+  # AdSense flagged "low value content" — too much AI-generated content.
+  # Cron schedule disabled until AdSense approval.
+  # Manual runs still work via "Run workflow" button in GitHub Actions UI.
+  # Re-enable by uncommenting the schedule block below:
+  #
+  # schedule:
+  #   - cron: "0 */12 * * *"
+
   # Allow manual trigger
   workflow_dispatch:
     inputs:
