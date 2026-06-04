@@ -182,6 +182,7 @@ def supabase_post(table: str, data: dict) -> dict:
 
 
 def claude(system: str, user: str) -> str:
+    """Plain text Claude completion (for non-structured outputs)."""
     url = "https://api.anthropic.com/v1/messages"
     headers = {
         "x-api-key": ANTHROPIC_API_KEY,
@@ -195,6 +196,38 @@ def claude(system: str, user: str) -> str:
     }
     res = _req(url, method="POST", data=data, headers=headers)
     return res["content"][0]["text"]
+
+
+def claude_structured(system: str, user: str, tool_schema: dict) -> dict:
+    """
+    Call Claude with tool_use to force structured JSON output.
+    Returns the parsed input from the tool call — always valid JSON.
+    """
+    url = "https://api.anthropic.com/v1/messages"
+    headers = {
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+    }
+    data = {
+        "model": CLAUDE_MODEL,
+        "max_tokens": MAX_TOKENS,
+        "system": system,
+        "tools": [{
+            "name":        "publish_blog_post",
+            "description": "Save the generated blog post to the database",
+            "input_schema": tool_schema,
+        }],
+        "tool_choice": {"type": "tool", "name": "publish_blog_post"},
+        "messages": [{"role": "user", "content": user}],
+    }
+    res = _req(url, method="POST", data=data, headers=headers)
+
+    # Find the tool_use block
+    for block in res.get("content", []):
+        if block.get("type") == "tool_use" and block.get("name") == "publish_blog_post":
+            return block["input"]
+
+    raise ValueError(f"Claude did not return tool_use block. Response: {json.dumps(res)[:500]}")
 
 
 def unsplash_image(query: str) -> dict | None:
@@ -269,60 +302,47 @@ Writing rules:
 - Return VALID JSON ONLY — no markdown, no code fences, no explanation"""
 
 
+POST_SCHEMA = {
+    "type": "object",
+    "required": ["title", "slug", "meta_title", "meta_description",
+                 "focus_keyword", "excerpt", "intro", "body", "tags", "reading_time"],
+    "properties": {
+        "title":            { "type": "string", "description": "SEO title 50-60 chars" },
+        "slug":             { "type": "string", "description": "lowercase-hyphenated url slug, no special chars" },
+        "meta_title":       { "type": "string", "description": "60-char meta title" },
+        "meta_description": { "type": "string", "description": "150-160 char meta description with primary keyword" },
+        "focus_keyword":    { "type": "string", "description": "primary keyword phrase (3-5 words)" },
+        "excerpt":          { "type": "string", "description": "2-sentence plain text excerpt" },
+        "intro":            { "type": "string", "description": "<p>HTML intro — 2 paragraphs</p>" },
+        "body":             { "type": "string", "description": "1200-1600 words of HTML with H2/H3, bullets, FAQ section" },
+        "tags":             { "type": "array",  "items": {"type": "string"}, "description": "5 relevant tags" },
+        "reading_time":     { "type": "integer", "description": "estimated reading time in minutes" },
+    },
+}
+
+
 def generate_post(topic: str, category_name: str) -> dict:
+    """
+    Generate a structured blog post via Claude tool_use.
+    Guaranteed valid JSON because Claude returns it as a tool invocation
+    instead of free-form text.
+    """
     prompt = f"""Write a comprehensive blog post for EduDhruv.com on: "{topic}"
 Category: {category_name}
 
-Return a JSON object with EXACTLY these fields:
-{{
-  "title": "SEO title 50-60 chars, include year if relevant",
-  "slug": "lowercase-hyphenated-url-slug-no-special-chars",
-  "meta_title": "60-char SEO meta title",
-  "meta_description": "150-160 char meta description with primary keyword",
-  "focus_keyword": "primary keyword phrase (3-5 words)",
-  "excerpt": "2-sentence plain text excerpt",
-  "intro": "<p>HTML intro — 2 paragraphs — hooks reader, includes focus keyword in first sentence</p>",
-  "body": "<article body — 1200-1600 words of HTML with H2/H3 headings, bullet lists, numbered steps. MUST include a section titled 'Frequently Asked Questions' with 3-4 H3 question headings each followed by a <p> answer paragraph>",
-  "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
-  "reading_time": 7
-}}
+Then call the `publish_blog_post` tool with the generated content.
 
 Content requirements:
 - Body word count: 1200-1600 words
 - At least 3 H2 subheadings
-- FAQ section with minimum 3 questions at the end
-- Include at least 1 internal link suggestion: text linking to /education-loan/
-- 2025 statistics and real data points
-- Naturally place focus keyword in first 100 words"""
+- FAQ section at the end with minimum 3 H3 questions, each followed by a <p> answer
+- Include at least 1 internal link: <a href="/education-loan/">education loan</a>
+- 2025 statistics where applicable
+- Place focus keyword naturally in first 100 words
+- All HTML must be valid (close every tag)
+- For the slug: lowercase, hyphens only, no special chars, max 80 chars"""
 
-    raw = claude(SYSTEM_PROMPT, prompt)
-
-    # Strip markdown fences if Claude wrapped output in them
-    clean = raw.strip()
-    if clean.startswith("```"):
-        # Remove first line (```json or ```) and last ``` block
-        lines = clean.split("\n")
-        if len(lines) > 1:
-            clean = "\n".join(lines[1:])
-        clean = clean.rsplit("```", 1)[0].strip()
-
-    # Sometimes Claude adds preamble like "Here's the JSON:" — try to find the first {
-    if not clean.startswith("{"):
-        idx = clean.find("{")
-        if idx > 0:
-            clean = clean[idx:]
-        # And trim anything after the last }
-        last = clean.rfind("}")
-        if last > 0:
-            clean = clean[:last + 1]
-
-    try:
-        return json.loads(clean)
-    except json.JSONDecodeError as e:
-        log.error(f"JSON parse failed at position {e.pos}: {e.msg}")
-        log.error(f"Raw Claude output (first 500 chars): {raw[:500]}")
-        log.error(f"Cleaned (first 500 chars):           {clean[:500]}")
-        raise
+    return claude_structured(SYSTEM_PROMPT, prompt, POST_SCHEMA)
 
 
 # ─── PUBLISH TO SUPABASE ──────────────────────────────────────────────────
