@@ -1,11 +1,12 @@
 "use client";
 import { useState } from "react";
 import AdminHeader from "@/components/admin/AdminHeader";
+import TwoFactorSetup from "@/components/admin/TwoFactorSetup";
 import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [tab, setTab] = useState<"profile" | "password" | "session">("profile");
+  const [tab, setTab] = useState<"profile" | "password" | "twofa" | "session">("profile");
 
   // Profile state — saved to localStorage (or Supabase admin_profile table in prod)
   const [profile, setProfile] = useState({
@@ -81,6 +82,7 @@ export default function ProfilePage() {
           {[
             { key: "profile",  icon: "👤", label: "Profile"          },
             { key: "password", icon: "🔒", label: "Change Password"  },
+            { key: "twofa",    icon: "🔐", label: "Two-Factor Auth"   },
             { key: "session",  icon: "🚪", label: "Sessions & Logout" },
           ].map(t => (
             <button key={t.key} onClick={() => { setTab(t.key as any); setMsg(null); }}
@@ -189,6 +191,20 @@ export default function ProfilePage() {
                   When you change it here, you must also update the env var on Vercel and redeploy for the change to persist after server restart.
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* 2FA tab */}
+          {tab === "twofa" && (
+            <div className="space-y-5">
+              <div>
+                <h2 className="text-white font-bold text-lg mb-1">Two-Factor Authentication</h2>
+                <p className="text-sm text-gray-400">
+                  Add a second layer of security to your admin login. Even if your password is stolen,
+                  no one can log in without your authenticator app.
+                </p>
+              </div>
+              <TwoFactorSetup />
             </div>
           )}
 
