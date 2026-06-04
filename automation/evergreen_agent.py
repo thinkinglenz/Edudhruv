@@ -26,6 +26,7 @@ import random
 import logging
 import urllib.request
 import urllib.parse
+import urllib.error
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -199,18 +200,45 @@ def claude(system: str, user: str) -> str:
     return res["content"][0]["text"]
 
 
+def list_available_models() -> list[str]:
+    """Query Anthropic /v1/models to discover what's available on this account."""
+    try:
+        req = urllib.request.Request(
+            "https://api.anthropic.com/v1/models",
+            headers={"x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01"},
+        )
+        with urllib.request.urlopen(req, timeout=30) as res:
+            data = json.loads(res.read())
+        return [m["id"] for m in data.get("data", [])]
+    except Exception as e:
+        log.warning(f"Could not list models: {e}")
+        return []
+
+
+# Model preference — tries each in order until one works.
+# Newest Haiku first (cheapest), then Sonnet (more reliable), then older dated IDs.
+MODEL_FALLBACKS = [
+    "claude-haiku-4-5",                # Claude 4.5 family alias
+    "claude-3-5-haiku-20241022",       # Stable dated Haiku 3.5
+    "claude-sonnet-4-5",               # Sonnet 4.5 family alias (more expensive)
+    "claude-3-5-sonnet-20241022",      # Stable dated Sonnet 3.5
+    "claude-3-haiku-20240307",         # Oldest Haiku (last-resort fallback)
+]
+
+
 def claude_structured(system: str, user: str, tool_schema: dict) -> dict:
     """
     Call Claude with tool_use to force structured JSON output.
     Returns the parsed input from the tool call — always valid JSON.
+
+    Tries CLAUDE_MODEL first, then auto-falls back to alternatives if 404.
     """
     url = "https://api.anthropic.com/v1/messages"
     headers = {
         "x-api-key": ANTHROPIC_API_KEY,
         "anthropic-version": "2023-06-01",
     }
-    data = {
-        "model": CLAUDE_MODEL,
+    base_payload = {
         "max_tokens": MAX_TOKENS,
         "system": system,
         "tools": [{
@@ -221,14 +249,43 @@ def claude_structured(system: str, user: str, tool_schema: dict) -> dict:
         "tool_choice": {"type": "tool", "name": "publish_blog_post"},
         "messages": [{"role": "user", "content": user}],
     }
-    res = _req(url, method="POST", data=data, headers=headers)
 
-    # Find the tool_use block
-    for block in res.get("content", []):
-        if block.get("type") == "tool_use" and block.get("name") == "publish_blog_post":
-            return block["input"]
+    # Build the list of models to try: configured one first, then fallbacks
+    models_to_try = [CLAUDE_MODEL]
+    for m in MODEL_FALLBACKS:
+        if m not in models_to_try:
+            models_to_try.append(m)
 
-    raise ValueError(f"Claude did not return tool_use block. Response: {json.dumps(res)[:500]}")
+    last_error = None
+    for model in models_to_try:
+        log.info(f"  Trying model: {model}")
+        try:
+            res = _req(url, method="POST", data={**base_payload, "model": model}, headers=headers)
+            for block in res.get("content", []):
+                if block.get("type") == "tool_use" and block.get("name") == "publish_blog_post":
+                    log.info(f"  ✓ Model {model} succeeded")
+                    return block["input"]
+            raise ValueError(f"No tool_use block in response from {model}")
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                log.warning(f"  ✗ Model {model} not available (404), trying next...")
+                last_error = e
+                continue
+            raise  # 401, 429, 500 — don't fallback
+        except Exception as e:
+            last_error = e
+            log.warning(f"  ✗ Model {model} failed: {e}, trying next...")
+            continue
+
+    # Nothing worked — log what's actually available for the user
+    log.error("All model fallbacks failed. Listing what your account actually has:")
+    available = list_available_models()
+    if available:
+        log.error(f"Available models on this account: {available}")
+        log.error(f"→ Set CLAUDE_MODEL env var or override in workflow_dispatch input")
+    else:
+        log.error("Could not list models — check ANTHROPIC_API_KEY is valid and has billing")
+    raise last_error or ValueError("No working model found")
 
 
 def unsplash_image(query: str) -> dict | None:
