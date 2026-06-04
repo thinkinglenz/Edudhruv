@@ -365,16 +365,52 @@ POST_SCHEMA = {
     "required": ["title", "slug", "meta_title", "meta_description",
                  "focus_keyword", "excerpt", "intro", "body", "tags", "reading_time"],
     "properties": {
-        "title":            { "type": "string", "description": "SEO title 50-60 chars" },
-        "slug":             { "type": "string", "description": "lowercase-hyphenated url slug, no special chars" },
-        "meta_title":       { "type": "string", "description": "60-char meta title" },
-        "meta_description": { "type": "string", "description": "150-160 char meta description with primary keyword" },
-        "focus_keyword":    { "type": "string", "description": "primary keyword phrase (3-5 words)" },
-        "excerpt":          { "type": "string", "description": "2-sentence plain text excerpt" },
-        "intro":            { "type": "string", "description": "<p>HTML intro — 2 paragraphs</p>" },
-        "body":             { "type": "string", "description": "1200-1600 words of HTML with H2/H3, bullets, FAQ section" },
-        "tags":             { "type": "array",  "items": {"type": "string"}, "description": "5 relevant tags" },
-        "reading_time":     { "type": "integer", "description": "estimated reading time in minutes" },
+        "title": {
+            "type": "string",
+            "description": "SEO-optimised blog post title, 50-70 characters. Include year if relevant.",
+        },
+        "slug": {
+            "type": "string",
+            "description": "URL slug: lowercase, hyphens only, no special chars, max 80 chars (e.g. 'student-visa-uk-2026-guide').",
+        },
+        "meta_title": {
+            "type": "string",
+            "description": "SEO meta title for <title> tag, up to 65 characters.",
+        },
+        "meta_description": {
+            "type": "string",
+            "description": "SEO meta description, 140-160 characters, with primary keyword and clear value prop.",
+        },
+        "focus_keyword": {
+            "type": "string",
+            "description": "Primary SEO keyword phrase (3-6 words).",
+        },
+        "excerpt": {
+            "type": "string",
+            "description": "Plain-text excerpt, 2 sentences (max 300 chars), summarising the post.",
+        },
+        "intro": {
+            "type": "string",
+            "description": "REQUIRED: HTML intro for the article — 2 short paragraphs wrapped in <p> tags. Hook the reader, include the focus keyword in the first sentence.",
+        },
+        "body": {
+            "type": "string",
+            "description": "REQUIRED: The MAIN ARTICLE BODY as a single HTML string. MUST be 1200-1600 words. MUST include 3+ <h2> subheadings. MUST include a Frequently Asked Questions section at the end with 3+ <h3> questions each followed by a <p> answer. Use <ul>/<li>, <strong>, and at least one internal link <a href=\"/education-loan/\">education loan</a>. Do NOT include the intro paragraphs again — only the body content AFTER the intro.",
+            "minLength": 1500,
+        },
+        "tags": {
+            "type": "array",
+            "items": {"type": "string"},
+            "minItems": 3,
+            "maxItems": 8,
+            "description": "Array of 5 relevant tags (single words or short phrases).",
+        },
+        "reading_time": {
+            "type": "integer",
+            "minimum": 3,
+            "maximum": 20,
+            "description": "Estimated reading time in minutes (typical: 7).",
+        },
     },
 }
 
@@ -388,17 +424,21 @@ def generate_post(topic: str, category_name: str) -> dict:
     prompt = f"""Write a comprehensive blog post for EduDhruv.com on: "{topic}"
 Category: {category_name}
 
-Then call the `publish_blog_post` tool with the generated content.
+You MUST call the `publish_blog_post` tool with ALL of these required fields:
+title, slug, meta_title, meta_description, focus_keyword, excerpt, intro, body, tags, reading_time.
 
-Content requirements:
-- Body word count: 1200-1600 words
-- At least 3 H2 subheadings
-- FAQ section at the end with minimum 3 H3 questions, each followed by a <p> answer
-- Include at least 1 internal link: <a href="/education-loan/">education loan</a>
-- 2025 statistics where applicable
-- Place focus keyword naturally in first 100 words
-- All HTML must be valid (close every tag)
-- For the slug: lowercase, hyphens only, no special chars, max 80 chars"""
+CRITICAL — the `body` field is the longest one. It MUST:
+- Be 1200-1600 words of HTML
+- Start with a <h2> heading (not <p>)
+- Contain at least 3 <h2> subheadings
+- End with a Frequently Asked Questions section: <h2>Frequently Asked Questions</h2> followed by 3+ <h3>question</h3><p>answer</p> pairs
+- Include at least one internal link: <a href="/education-loan/">education loan</a>
+- Reference 2025/2026 data points
+- NOT repeat the intro (the intro field is rendered separately)
+
+CRITICAL — slug: lowercase, hyphens only, no special chars (e.g. "cost-of-living-germany-2026").
+
+Call publish_blog_post NOW with all 10 fields populated. Don't skip any."""
 
     return claude_structured(SYSTEM_PROMPT, prompt, POST_SCHEMA)
 
@@ -406,7 +446,30 @@ Content requirements:
 # ─── PUBLISH TO SUPABASE ──────────────────────────────────────────────────
 
 def publish_post(post_data: dict, category_slug: str, image: dict | None) -> dict:
-    full_content = post_data["intro"]
+    # Log what fields we actually got from Claude (helps diagnose missing data)
+    log.info(f"  Claude returned keys: {sorted(post_data.keys())}")
+
+    # Required: title and slug — can't publish without them
+    if not post_data.get("title"):
+        raise ValueError(f"Claude omitted 'title'. Got: {list(post_data.keys())}")
+    if not post_data.get("slug"):
+        raise ValueError(f"Claude omitted 'slug'. Got: {list(post_data.keys())}")
+
+    # Body might come back as 'body' OR 'content' OR 'article_body' depending on model
+    # Try multiple key names; fall back to building from intro alone if absent
+    body = (
+        post_data.get("body")
+        or post_data.get("content")
+        or post_data.get("article_body")
+        or post_data.get("article")
+        or ""
+    )
+    intro = post_data.get("intro") or post_data.get("introduction") or ""
+
+    if not body and not intro:
+        raise ValueError(f"Claude returned no body or intro. Got: {list(post_data.keys())}")
+
+    full_content = intro
 
     if image:
         full_content += (
@@ -416,22 +479,25 @@ def publish_post(post_data: dict, category_slug: str, image: dict | None) -> dic
             f'<figcaption>{image["credit"]}</figcaption></figure>'
         )
 
-    full_content += "\n" + post_data["body"]
+    if body:
+        full_content += "\n" + body
+
+    log.info(f"  Total content: {len(full_content)} chars, intro={len(intro)}, body={len(body)}")
 
     record = {
         "title":                 post_data["title"],
         "slug":                  post_data["slug"],
         "content":               full_content,
-        "excerpt":               post_data.get("excerpt", ""),
+        "excerpt":               post_data.get("excerpt", "") or "",
         "category_slug":         category_slug,
-        "meta_title":            post_data.get("meta_title") or post_data["title"],
-        "meta_description":      post_data.get("meta_description", ""),
-        "focus_keyword":         post_data.get("focus_keyword", ""),
+        "meta_title":            (post_data.get("meta_title") or post_data["title"])[:200],
+        "meta_description":      (post_data.get("meta_description") or "")[:200],
+        "focus_keyword":         (post_data.get("focus_keyword") or "")[:100],
         "featured_image_url":    image["url"] if image else None,
         "featured_image_alt":    image["alt"] if image else None,
         "featured_image_credit": image["credit"] if image else None,
-        "reading_time":          post_data.get("reading_time", 7),
-        "tags":                  post_data.get("tags", []),
+        "reading_time":          int(post_data.get("reading_time") or 7),
+        "tags":                  post_data.get("tags") or [],
         "status":                "published",
     }
 
