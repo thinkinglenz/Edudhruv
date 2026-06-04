@@ -1,0 +1,86 @@
+# ─── Dependencies ──────────────────────────────────────
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# ─── Testing & Coverage ────────────────────────────────
+/coverage
+
+# ─── Next.js ───────────────────────────────────────────
+/.next/
+/out/
+*.tsbuildinfo
+next-env.d.ts
+
+# ─── Production builds ─────────────────────────────────
+/build
+/dist
+
+# ─── Environment Variables (NEVER commit!) ─────────────
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.production
+
+# ─── Logs & Debug ──────────────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+logs/
+*.log
+
+# ─── OS Files ──────────────────────────────────────────
+.DS_Store
+*.pem
+Thumbs.db
+
+# ─── IDE ───────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ─── Vercel ────────────────────────────────────────────
+.vercel
+
+# ─── TypeScript ────────────────────────────────────────
+*.tsbuildinfo
+
+# ─── WordPress Backup (3GB — DO NOT COMMIT) ────────────
+# Raw WP backup is migration source only — extracted data is in JSON
+migration/wp-backup/
+migration/*.tar.zst
+migration/*.tar
+migration/*.zip
+
+# WP plugin backup tarballs accidentally copied via uploads/ — exclude
+public/wp-content/uploads/backwpup/
+public/wp-content/uploads/**/*.tar
+public/wp-content/uploads/**/*.tar.gz
+public/wp-content/uploads/**/*.zip
+public/wp-content/uploads/**/*.bak.*
+public/wp-content/uploads/**/*.sql
+
+# ─── Migration outputs (kept in repo for re-import) ────
+# These ARE committed so the data can be re-imported on Vercel:
+#   - migration/wp_export.json
+#   - migration/wp_pages.json
+#   - migration/leads_export.json
+
+# ─── Python venv ───────────────────────────────────────
+automation/__pycache__/
+automation/.env
+automation/venv/
+*.pyc
+
+# ─── Local testing artifacts ───────────────────────────
+/tmp
+*.tmp

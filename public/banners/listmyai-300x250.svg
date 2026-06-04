@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 250" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="lm2bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a0a23"/>
+      <stop offset="50%" stop-color="#1a1a4a"/>
+      <stop offset="100%" stop-color="#2d1b69"/>
+    </linearGradient>
+    <linearGradient id="lm2accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#00d4ff"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <radialGradient id="lm2glow" cx="0.5" cy="0.5" r="0.8">
+      <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#00d4ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="300" height="250" fill="url(#lm2bg)"/>
+  <circle cx="60" cy="60" r="70" fill="url(#lm2glow)"/>
+  <circle cx="240" cy="190" r="60" fill="url(#lm2glow)" opacity="0.6"/>
+
+  <!-- AI icon -->
+  <g transform="translate(118, 35)">
+    <rect width="64" height="64" rx="14" fill="url(#lm2accent)"/>
+    <text x="32" y="44" text-anchor="middle" fill="#fff" font-family="Inter,sans-serif" font-weight="900" font-size="28">AI</text>
+  </g>
+
+  <!-- Title -->
+  <text x="150" y="135" text-anchor="middle" fill="#fff" font-family="Inter,sans-serif" font-weight="800" font-size="32">ListMyAI</text>
+  <text x="150" y="158" text-anchor="middle" fill="#00d4ff" font-family="Inter,sans-serif" font-weight="600" font-size="13">.com</text>
+  <text x="150" y="185" text-anchor="middle" fill="#e0e0ff" font-family="Inter,sans-serif" font-size="12">Discover the Best</text>
+  <text x="150" y="202" text-anchor="middle" fill="#e0e0ff" font-family="Inter,sans-serif" font-size="12">AI Tools — Curated</text>
+
+  <!-- CTA -->
+  <rect x="100" y="215" width="100" height="32" rx="16" fill="url(#lm2accent)"/>
+  <text x="150" y="236" text-anchor="middle" fill="#fff" font-family="Inter,sans-serif" font-weight="700" font-size="13">Explore →</text>
+</svg>

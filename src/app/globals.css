@@ -1,0 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --brand:        #3AAFE5;
+    --brand-dark:   #2090C5;
+    --brand-light:  #EBF7FD;
+    --edu-dark:     #555555;
+    --gold:         #F5A71A;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    color: #555555;
+    background: #fff;
+    font-family: Inter, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer components {
+  /* ── Blog article typography ── */
+  .prose-blog {
+    @apply max-w-none text-gray-700 leading-relaxed;
+  }
+  .prose-blog h2 {
+    @apply text-2xl font-bold mt-10 mb-4 border-b border-gray-100 pb-2;
+    color: #333333;
+  }
+  .prose-blog h3 {
+    @apply text-xl font-semibold mt-8 mb-3;
+    color: #333333;
+  }
+  .prose-blog p {
+    @apply mb-5 text-[1.05rem] leading-[1.82] text-gray-700;
+  }
+  .prose-blog ul {
+    @apply list-disc pl-6 mb-5 space-y-1.5;
+  }
+  .prose-blog ol {
+    @apply list-decimal pl-6 mb-5 space-y-1.5;
+  }
+  .prose-blog li {
+    @apply text-[1.02rem] leading-[1.7] text-gray-700;
+  }
+  .prose-blog a {
+    color: #3AAFE5;
+    @apply underline underline-offset-2;
+  }
+  .prose-blog a:hover { color: #2090C5; }
+  .prose-blog strong {
+    @apply font-semibold;
+    color: #333333;
+  }
+  .prose-blog blockquote {
+    @apply border-l-4 pl-5 italic text-gray-500 my-6 rounded-r-lg py-3;
+    border-color: #3AAFE5;
+    background: #EBF7FD;
+  }
+  .prose-blog table {
+    @apply w-full text-sm border-collapse mb-6;
+  }
+  .prose-blog th {
+    @apply font-semibold px-4 py-2 text-left border border-gray-200;
+    background: #EBF7FD;
+    color: #3AAFE5;
+  }
+  .prose-blog td {
+    @apply px-4 py-2 border border-gray-200;
+  }
+  .prose-blog figure {
+    @apply my-8;
+  }
+  .prose-blog figcaption {
+    @apply text-center text-xs text-gray-400 mt-2;
+  }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    @apply bg-brand text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-brand-dark transition-colors shadow-sm;
+  }
+  .btn-outline {
+    @apply border-2 border-brand text-brand font-semibold px-6 py-2.5 rounded-lg hover:bg-brand-light transition-colors;
+  }
+}
