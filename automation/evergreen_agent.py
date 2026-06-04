@@ -43,10 +43,12 @@ log = logging.getLogger("evergreen")
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────
 ANTHROPIC_API_KEY    = os.getenv("ANTHROPIC_API_KEY", "")
-SUPABASE_URL         = os.getenv("SUPABASE_URL", "")
+# Accept either env var name (workflow uses SUPABASE_URL, Vercel uses NEXT_PUBLIC_SUPABASE_URL)
+SUPABASE_URL         = os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 UNSPLASH_KEY         = os.getenv("UNSPLASH_ACCESS_KEY", "")
-CLAUDE_MODEL         = os.getenv("CLAUDE_MODEL", "claude-haiku-4-5-20251001")
+# Default to a current, valid Claude model name
+CLAUDE_MODEL         = os.getenv("CLAUDE_MODEL", "claude-3-5-haiku-latest")
 MAX_TOKENS           = int(os.getenv("MAX_TOKENS", "4096"))
 AMAZON_TAG           = os.getenv("AMAZON_ASSOCIATE_ID", "edudhruv-20")
 
@@ -141,12 +143,23 @@ CYCLE_ORDER = (
 # ─── HTTP HELPERS ──────────────────────────────────────────────────────────
 
 def _req(url: str, method: str = "GET", data: dict | None = None, headers: dict | None = None) -> dict:
+    """HTTP request with detailed error logging on failure."""
     body = json.dumps(data).encode() if data else None
     req = urllib.request.Request(url, data=body, method=method, headers=headers or {})
     if body:
         req.add_header("Content-Type", "application/json")
-    with urllib.request.urlopen(req, timeout=60) as res:
-        return json.loads(res.read())
+    try:
+        with urllib.request.urlopen(req, timeout=120) as res:
+            return json.loads(res.read())
+    except urllib.error.HTTPError as e:
+        # Log the actual error body so we can see what's wrong
+        err_body = e.read().decode("utf-8", errors="replace")
+        log.error(f"HTTP {e.code} on {method} {url}")
+        log.error(f"Response: {err_body[:1000]}")
+        raise
+    except urllib.error.URLError as e:
+        log.error(f"Network error on {method} {url}: {e.reason}")
+        raise
 
 
 def supabase_get(table: str, params: str = "") -> list[dict]:
@@ -283,11 +296,33 @@ Content requirements:
 - Naturally place focus keyword in first 100 words"""
 
     raw = claude(SYSTEM_PROMPT, prompt)
-    # Strip accidental markdown fences
+
+    # Strip markdown fences if Claude wrapped output in them
     clean = raw.strip()
     if clean.startswith("```"):
-        clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-    return json.loads(clean)
+        # Remove first line (```json or ```) and last ``` block
+        lines = clean.split("\n")
+        if len(lines) > 1:
+            clean = "\n".join(lines[1:])
+        clean = clean.rsplit("```", 1)[0].strip()
+
+    # Sometimes Claude adds preamble like "Here's the JSON:" — try to find the first {
+    if not clean.startswith("{"):
+        idx = clean.find("{")
+        if idx > 0:
+            clean = clean[idx:]
+        # And trim anything after the last }
+        last = clean.rfind("}")
+        if last > 0:
+            clean = clean[:last + 1]
+
+    try:
+        return json.loads(clean)
+    except json.JSONDecodeError as e:
+        log.error(f"JSON parse failed at position {e.pos}: {e.msg}")
+        log.error(f"Raw Claude output (first 500 chars): {raw[:500]}")
+        log.error(f"Cleaned (first 500 chars):           {clean[:500]}")
+        raise
 
 
 # ─── PUBLISH TO SUPABASE ──────────────────────────────────────────────────
@@ -397,4 +432,15 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import traceback
+    try:
+        main()
+    except SystemExit:
+        raise
+    except Exception as e:
+        log.error("═" * 60)
+        log.error(f"AGENT FAILED: {type(e).__name__}: {e}")
+        log.error("Full traceback:")
+        log.error(traceback.format_exc())
+        log.error("═" * 60)
+        raise SystemExit(1)
