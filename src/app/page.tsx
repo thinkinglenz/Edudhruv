@@ -171,6 +171,49 @@ export default async function HomePage() {
         );
       })}
 
+      {/* ── Advertise CTA — for sponsors / universities ─────────── */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+        <div
+          className="rounded-3xl p-8 sm:p-12 text-center text-white shadow-xl relative overflow-hidden"
+          style={{ background: "linear-gradient(135deg, #1a1a4a 0%, #3AAFE5 50%, #F5A71A 100%)" }}
+        >
+          <div className="relative z-10 max-w-3xl mx-auto">
+            <span className="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-semibold uppercase tracking-widest mb-4">
+              📣 For Universities, Lenders & Sponsors
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-extrabold mb-4 leading-tight">
+              Reach 100,000+ Indian Students<br className="hidden sm:inline" />
+              Researching Study Abroad
+            </h2>
+            <p className="text-base sm:text-lg text-white/90 mb-6 max-w-2xl mx-auto">
+              Banner ads, sponsored articles, featured listings. Partner with India's
+              trusted education guidance platform — pricing from <strong>₹25,000</strong>.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                href="/advertise"
+                className="inline-flex items-center justify-center gap-2 bg-white font-bold px-7 py-3 rounded-xl hover:bg-gray-50 transition-colors shadow-lg"
+                style={{ color: "#1a1a4a" }}
+              >
+                See Advertising Packages →
+              </Link>
+              <a
+                href="mailto:edudruv@gmail.com?subject=Advertising%20enquiry"
+                className="inline-flex items-center justify-center gap-2 border-2 border-white/60 text-white font-semibold px-7 py-3 rounded-xl hover:bg-white/10 transition-colors"
+              >
+                Quick email enquiry
+              </a>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 mt-6 text-white/70 text-xs">
+              <span>✓ 100K+ monthly visitors</span>
+              <span>✓ 85% Indian student audience</span>
+              <span>✓ 12K newsletter subscribers</span>
+              <span>✓ 24h response</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Category visual grid ──────────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-14 pt-6">
         <h2 className="text-lg font-bold mb-4" style={{ color: "#555555" }}>Browse by Topic</h2>
