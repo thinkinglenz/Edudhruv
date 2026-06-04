@@ -13,9 +13,12 @@ interface Props {
  */
 export default function PostContent({ content, slug, categorySlug }: Props) {
   // Find insertion point: after 2nd H2
-  const h2Matches = [...content.matchAll(/<\/h2>/gi)];
+  const h2Matches: RegExpExecArray[] = [];
+  const h2Regex = /<\/h2>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = h2Regex.exec(content)) !== null) h2Matches.push(m);
   const insertAt = h2Matches.length >= 2
-    ? h2Matches[1].index! + 5
+    ? h2Matches[1].index + 5
     : Math.floor(content.length * 0.4);
 
   const top = content.substring(0, insertAt);

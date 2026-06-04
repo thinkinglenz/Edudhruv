@@ -10,7 +10,7 @@ import RotatingBanner, { ListMyAIBanner, ThinkingLenzBanner } from "@/components
 
 export const revalidate = 3600;
 
-const SPONSORED_SLIDES = [];
+const SPONSORED_SLIDES: never[] = [];
 const HOMEPAGE_CATEGORIES = [
   "education-loan",
   "scholarship",

@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
     .from("post_reactions").select("type")
     .eq("post_slug", slug).eq("user_id", portalUser.id);
 
-  const types = (data || []).map(r => r.type);
+  const types = (data || []).map((r: { type: string }) => r.type);
   return NextResponse.json({
     liked: types.includes("like"),
     bookmarked: types.includes("bookmark"),

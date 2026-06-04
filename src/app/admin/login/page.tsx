@@ -1,9 +1,17 @@
 "use client";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 
-export default function AdminLogin() {
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminLoginInner />
+    </Suspense>
+  );
+}
+
+function AdminLoginInner() {
   const router = useRouter();
   const params = useSearchParams();
   const from = params.get("from") || "/admin";

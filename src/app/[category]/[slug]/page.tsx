@@ -53,7 +53,7 @@ function formatDate(iso: string) {
 
 function buildFaqSchema(content: string) {
   const faqs: { q: string; a: string }[] = [];
-  const h3Regex = /<h3[^>]*>(.*?)<\/h3>\s*<p>(.*?)<\/p>/gis;
+  const h3Regex = /<h3[^>]*>([\s\S]*?)<\/h3>\s*<p>([\s\S]*?)<\/p>/gi;
   let match;
   while ((match = h3Regex.exec(content)) !== null && faqs.length < 5) {
     const q = match[1].replace(/<[^>]+>/g, "").trim();
