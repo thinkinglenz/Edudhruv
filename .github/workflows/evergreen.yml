@@ -10,7 +10,7 @@ on:
       model:
         description: "Claude model (optional override)"
         required: false
-        default: "claude-3-5-haiku-latest"
+        default: "claude-3-5-haiku-20241022"
 
 jobs:
   publish:
@@ -36,6 +36,6 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY:  ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           UNSPLASH_ACCESS_KEY:        ${{ secrets.UNSPLASH_ACCESS_KEY }}
           AMAZON_ASSOCIATE_ID:        edudhruv-20
-          # Default to claude-3-5-haiku-latest; manual runs can override
-          CLAUDE_MODEL:               ${{ inputs.model || 'claude-3-5-haiku-latest' }}
+          # Default to claude-3-5-haiku-20241022; manual runs can override
+          CLAUDE_MODEL:               ${{ inputs.model || 'claude-3-5-haiku-20241022' }}
         run: python automation/evergreen_agent.py

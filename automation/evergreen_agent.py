@@ -47,8 +47,9 @@ ANTHROPIC_API_KEY    = os.getenv("ANTHROPIC_API_KEY", "")
 SUPABASE_URL         = os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 UNSPLASH_KEY         = os.getenv("UNSPLASH_ACCESS_KEY", "")
-# Default to a current, valid Claude model name
-CLAUDE_MODEL         = os.getenv("CLAUDE_MODEL", "claude-3-5-haiku-latest")
+# Default to a stable, dated Claude model ID (— most reliable, no alias resolution).
+# Override with CLAUDE_MODEL env var or workflow_dispatch input.
+CLAUDE_MODEL         = os.getenv("CLAUDE_MODEL", "claude-3-5-haiku-20241022")
 MAX_TOKENS           = int(os.getenv("MAX_TOKENS", "4096"))
 AMAZON_TAG           = os.getenv("AMAZON_ASSOCIATE_ID", "edudhruv-20")
 
