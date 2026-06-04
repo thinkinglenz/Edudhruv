@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AdminHeader from "@/components/admin/AdminHeader";
 
 // ─── TAB DEFINITIONS ──────────────────────────────────────────────────────
@@ -58,41 +58,28 @@ const FIELDS: Record<string, { key:string; label:string; type:string; hint:strin
   ],
 };
 
-// Status: which env vars are currently set
-const ENV_STATUS: Record<string, boolean> = {
-  NEXT_PUBLIC_GA_ID:                    false,
-  NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: false,
-  NEXT_PUBLIC_ADSENSE_ID:               true,
-  NEXT_PUBLIC_AD_SLOT_LEADERBOARD:      false,
-  NEXT_PUBLIC_AD_SLOT_SIDEBAR:          false,
-  NEXT_PUBLIC_AD_SLOT_INFEED:           false,
-  ANTHROPIC_API_KEY:                    false,
-  CLAUDE_MODEL:                         true,
-  MAX_TOKENS:                           true,
-  UNSPLASH_ACCESS_KEY:                  false,
-  NEXT_PUBLIC_SUPABASE_URL:             false,
-  NEXT_PUBLIC_SUPABASE_ANON_KEY:        false,
-  SUPABASE_SERVICE_ROLE_KEY:            false,
-  NEXT_PUBLIC_AMAZON_ASSOCIATE_ID:      true,
-  CJ_AFFILIATE_ID:                      false,
-  CJ_AFFILIATE_SECRET:                  false,
-  FB_PAGE_ACCESS_TOKEN:                 false,
-  FB_PAGE_ID:                           true,
-  NEWSAPI_KEY:                          false,
-  LEAD_NOTIFY_EMAIL:                    false,
-  ADMIN_PASSWORD:                       true,
-  ADMIN_SESSION_TOKEN:                  true,
-};
-
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("google");
   const [values, setValues]       = useState<Record<string,string>>({});
   const [visible, setVisible]     = useState<Record<string,boolean>>({});
   const [savedMsg, setSavedMsg]   = useState("");
+  // Live env var status from server (replaces hardcoded ENV_STATUS)
+  const [envStatus, setEnvStatus] = useState<Record<string, boolean>>({});
+  const [statusLoaded, setStatusLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/env-status")
+      .then(r => r.json())
+      .then(d => {
+        setEnvStatus(d.status || {});
+        setStatusLoaded(true);
+      })
+      .catch(() => setStatusLoaded(true));
+  }, []);
 
   const fields = FIELDS[activeTab] || [];
   const tabMissingCount = (tab: string) =>
-    (FIELDS[tab] || []).filter(f => !ENV_STATUS[f.key]).length;
+    (FIELDS[tab] || []).filter(f => !envStatus[f.key]).length;
 
   function save() {
     setSavedMsg("✅ Copied! Paste these into Vercel → Project → Environment Variables, then redeploy.");
@@ -174,7 +161,7 @@ export default function SettingsPage() {
             </div>
             <div className="p-5 space-y-5">
               {fields.map(f => {
-                const isSet = ENV_STATUS[f.key];
+                const isSet = envStatus[f.key];
                 const isVisible = visible[f.key];
                 return (
                   <div key={f.key}>
@@ -218,12 +205,12 @@ export default function SettingsPage() {
               {fields.map((f, i) => (
                 <li key={f.key} className="flex items-center gap-2.5 text-sm">
                   <span className={`w-5 h-5 rounded-full text-xs flex items-center justify-center font-bold flex-shrink-0 ${
-                    ENV_STATUS[f.key] ? "bg-green-800 text-green-300" : "bg-gray-800 text-gray-500"
+                    envStatus[f.key] ? "bg-green-800 text-green-300" : "bg-gray-800 text-gray-500"
                   }`}>
-                    {ENV_STATUS[f.key] ? "✓" : i+1}
+                    {envStatus[f.key] ? "✓" : i+1}
                   </span>
-                  <span className={ENV_STATUS[f.key] ? "text-gray-500 line-through" : "text-gray-300"}>
-                    {ENV_STATUS[f.key] ? `${f.label} — done` : `Add ${f.key} to Vercel`}
+                  <span className={envStatus[f.key] ? "text-gray-500 line-through" : "text-gray-300"}>
+                    {envStatus[f.key] ? `${f.label} — done` : `Add ${f.key} to Vercel`}
                   </span>
                 </li>
               ))}
