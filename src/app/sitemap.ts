@@ -2,7 +2,9 @@ import { MetadataRoute } from "next";
 import { getAllPublishedSlugs } from "@/lib/supabase";
 import { CATEGORIES } from "@/lib/categories";
 
-const BASE = "https://www.edudhruv.com";
+// Use SITE_URL env var if set (e.g. https://edudhruv.vercel.app while DNS propagates),
+// otherwise default to the production domain.
+const BASE = (process.env.SITE_URL || "https://www.edudhruv.com").replace(/\/$/, "");
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const slugs = await getAllPublishedSlugs();

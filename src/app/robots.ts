@@ -1,5 +1,7 @@
 import { MetadataRoute } from "next";
 
+const BASE = (process.env.SITE_URL || "https://www.edudhruv.com").replace(/\/$/, "");
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
@@ -44,7 +46,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/admin/", "/api/", "/loan-portal/"],
       },
     ],
-    sitemap: "https://www.edudhruv.com/sitemap.xml",
-    host: "https://www.edudhruv.com",
+    sitemap: `${BASE}/sitemap.xml`,
+    host: BASE,
   };
 }
