@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 const RATE_LIMIT = new Map<string, { count: number; ts: number }>();
 
@@ -23,7 +24,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { name, email, phone, source_post_slug, destination } = body;
+    const { name, email, phone, source_post_slug, destination, captchaToken } = body;
+
+    // ─── Cloudflare Turnstile verification ─────────────────────────────
+    const captcha = await verifyTurnstile(captchaToken, ip);
+    if (!captcha.success) {
+      return NextResponse.json({ error: captcha.error || "Security check failed" }, { status: 400 });
+    }
 
     // Basic validation
     if (!name || !email || !phone) {

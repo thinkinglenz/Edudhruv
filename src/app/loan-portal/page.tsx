@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import TurnstileWidget from "@/components/social/TurnstileWidget";
 
 interface Message {
   role: "user" | "assistant";
@@ -17,6 +18,7 @@ export default function LoanPortalPage() {
   const [error, setError] = useState("");
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   // Chat state (only used when logged in)
   const [messages, setMessages] = useState<Message[]>([{ role: "assistant", content: WELCOME }]);
@@ -41,12 +43,13 @@ export default function LoanPortalPage() {
   // ── Auth handlers ──
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
+    if (!captchaToken) { setError("Please complete the security check"); return; }
     setError(""); setLoading(true);
     try {
       const res = await fetch("/api/portal/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "login", email: form.email, password: form.password }),
+        body: JSON.stringify({ action: "login", email: form.email, password: form.password, captchaToken }),
       });
       const data = await res.json();
       if (data.success) {
@@ -62,12 +65,13 @@ export default function LoanPortalPage() {
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
+    if (!captchaToken) { setError("Please complete the security check"); return; }
     setError(""); setLoading(true);
     try {
       const res = await fetch("/api/portal/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "register", ...form }),
+        body: JSON.stringify({ action: "register", ...form, captchaToken }),
       });
       const data = await res.json();
       if (data.success) {
@@ -189,9 +193,17 @@ export default function LoanPortalPage() {
               </div>
             )}
 
+            {/* Cloudflare Turnstile captcha — silent unless suspicious */}
+            <div className="flex justify-center pt-1">
+              <TurnstileWidget
+                onVerify={setCaptchaToken}
+                onExpire={() => setCaptchaToken(null)}
+              />
+            </div>
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !captchaToken}
               className="w-full py-3 rounded-lg text-white font-semibold disabled:opacity-60 transition-opacity"
               style={{ background: "#3AAFE5" }}
             >

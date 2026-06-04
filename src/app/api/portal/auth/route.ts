@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 /**
  * Student portal authentication.
  * When Supabase is configured, uses the `portal_users` table.
  * When in mock mode, stores users in-memory only (lost on server restart).
+ * All requests must include a Cloudflare Turnstile token.
  */
 
 const IS_MOCK = !process.env.NEXT_PUBLIC_SUPABASE_URL ||
@@ -40,7 +42,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { action, email, password, name, phone } = body;
+    const { action, email, password, name, phone, captchaToken } = body;
+
+    // ─── Cloudflare Turnstile verification ─────────────────────────────
+    const captcha = await verifyTurnstile(captchaToken, ip);
+    if (!captcha.success) {
+      return NextResponse.json({ error: captcha.error || "Security check failed" }, { status: 400 });
+    }
 
     // Validation
     if (!email || !password) {

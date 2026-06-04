@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import TurnstileWidget from "@/components/social/TurnstileWidget";
 
 interface Props {
   sourceSlug?: string;
@@ -7,21 +8,29 @@ interface Props {
 
 export default function LeadForm({ sourceSlug }: Props) {
   const [form, setForm] = useState({ name: "", phone: "", email: "" });
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setStatus("loading");
+    if (!captchaToken) {
+      setErrorMsg("Please complete the security check below"); setStatus("error"); return;
+    }
+    setStatus("loading"); setErrorMsg("");
     try {
       const res = await fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, source_post_slug: sourceSlug }),
+        body: JSON.stringify({ ...form, source_post_slug: sourceSlug, captchaToken }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Submission failed");
+      }
       setStatus("success");
-    } catch {
-      setStatus("error");
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Something went wrong"); setStatus("error");
     }
   }
 
@@ -70,15 +79,24 @@ export default function LeadForm({ sourceSlug }: Props) {
           onChange={(e) => setForm({ ...form, email: e.target.value })}
           className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-brand"
         />
+
+        {/* Cloudflare Turnstile captcha — invisible most of the time */}
+        <div className="flex justify-center pt-1">
+          <TurnstileWidget
+            onVerify={setCaptchaToken}
+            onExpire={() => setCaptchaToken(null)}
+          />
+        </div>
+
         <button
           type="submit"
-          disabled={status === "loading"}
+          disabled={status === "loading" || !captchaToken}
           className="w-full bg-brand text-white font-semibold py-3 rounded-lg hover:bg-brand-dark transition-colors disabled:opacity-60"
         >
           {status === "loading" ? "Submitting…" : "Get Free Consultation →"}
         </button>
         {status === "error" && (
-          <p className="text-red-600 text-xs text-center">Something went wrong. Please try again.</p>
+          <p className="text-red-600 text-xs text-center">{errorMsg || "Something went wrong. Please try again."}</p>
         )}
       </form>
     </div>
