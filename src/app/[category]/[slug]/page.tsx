@@ -14,6 +14,8 @@ import ReactionButtons      from "@/components/social/ReactionButtons";
 import CommentsSection      from "@/components/social/CommentsSection";
 import ReadingProgress      from "@/components/social/ReadingProgress";
 import FloatingShareBar     from "@/components/social/FloatingShareBar";
+import AuthorByline         from "@/components/blog/AuthorByline";
+import { getAuthorForPost } from "@/lib/authors";
 import { getPostStats }     from "@/lib/social";
 
 export const revalidate = 3600;
@@ -86,19 +88,29 @@ export default async function PostPage({
   const faqSchema = buildFaqSchema(post.content);
   const fullUrl   = `https://www.edudhruv.com/${post.category_slug}/${post.slug}`;
 
+  // Pick a deterministic author for this post (E-E-A-T SEO)
+  const author = getAuthorForPost(post.slug, post.category_slug);
+
   const articleSchema = {
     "@context": "https://schema.org",
     "@type": "Article",
-    headline: post.title,
-    description: post.meta_description || post.excerpt,
-    image: post.featured_image_url,
+    headline:      post.title,
+    description:   post.meta_description || post.excerpt,
+    image:         post.featured_image_url,
     datePublished: post.created_at,
-    dateModified: post.updated_at,
-    author: { "@type": "Organization", name: "EduDhruv" },
+    dateModified:  post.updated_at,
+    author: {
+      "@type":      "Person",
+      name:         author.name,
+      jobTitle:     author.role,
+      description:  author.bio,
+      url:          `https://www.edudhruv.com/author/${author.slug}`,
+      ...(author.linkedin && { sameAs: [author.linkedin, ...(author.twitter ? [author.twitter] : [])] }),
+    },
     publisher: {
       "@type": "Organization",
       name: "EduDhruv",
-      logo: { "@type": "ImageObject", url: "https://www.edudhruv.com/logo.png" },
+      logo: { "@type": "ImageObject", url: "https://www.edudhruv.com/logo.jpg" },
     },
     mainEntityOfPage: `https://www.edudhruv.com/${post.category_slug}/${post.slug}`,
   };
@@ -134,23 +146,20 @@ export default async function PostPage({
             {post.title}
           </h1>
 
-          <div className="flex items-center gap-4 text-sm text-gray-400 mb-4">
-            <span className="flex items-center gap-1.5">
-              <Calendar className="w-4 h-4" />
-              {formatDate(post.created_at)}
-            </span>
-            {post.reading_time && (
-              <span className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4" />
-                {post.reading_time} min read
-              </span>
-            )}
+          {/* Author + date + rating — combined byline */}
+          <div className="mb-5 pb-5 border-b border-gray-100">
+            <AuthorByline
+              postSlug={post.slug}
+              categorySlug={post.category_slug}
+              publishedAt={post.created_at}
+              readingTime={post.reading_time}
+            />
             {stats.avg_rating > 0 && (
-              <span className="flex items-center gap-1" title={`${stats.avg_rating}/5 from ${stats.rating_count} ratings`}>
+              <div className="mt-2 text-sm text-gray-400 flex items-center gap-1.5">
                 <span style={{ color: "#F5A71A" }}>★</span>
                 <strong className="text-gray-700">{stats.avg_rating}</strong>
-                <span>({stats.rating_count})</span>
-              </span>
+                <span>({stats.rating_count} {stats.rating_count === 1 ? "rating" : "ratings"})</span>
+              </div>
             )}
           </div>
 
@@ -204,8 +213,14 @@ export default async function PostPage({
             </div>
           )}
 
-          {/* End-of-article: Share + Rate */}
+          {/* End-of-article: Author card + Share + Rate */}
           <div className="mt-10 space-y-6">
+            <AuthorByline
+              postSlug={post.slug}
+              categorySlug={post.category_slug}
+              publishedAt={post.created_at}
+              variant="card"
+            />
             <ShareButtons url={fullUrl} title={post.title} slug={post.slug} />
             <RatingWidget
               postSlug={post.slug}
