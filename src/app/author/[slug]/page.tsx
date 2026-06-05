@@ -62,18 +62,6 @@ export default async function AuthorPage({ params }: { params: { slug: string } 
           </p>
           <p className="text-gray-600 text-sm sm:text-base leading-relaxed mt-4">{author.bio}</p>
           <div className="flex gap-3 mt-4 flex-wrap">
-            {author.linkedin && (
-              <a href={author.linkedin} target="_blank" rel="noopener"
-                 className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-gray-200 hover:bg-gray-50">
-                💼 LinkedIn →
-              </a>
-            )}
-            {author.twitter && (
-              <a href={author.twitter} target="_blank" rel="noopener"
-                 className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-gray-200 hover:bg-gray-50">
-                𝕏 Twitter →
-              </a>
-            )}
             <a href={`mailto:edudruv@gmail.com?subject=Question for ${author.name}`}
                className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white"
                style={{ background: author.color }}>
@@ -125,7 +113,6 @@ export default async function AuthorPage({ params }: { params: { slug: string } 
             description:  author.bio,
             url:          `https://www.edudhruv.com/author/${author.slug}`,
             worksFor:     { "@type": "Organization", name: "EduDhruv" },
-            ...(author.linkedin && { sameAs: [author.linkedin, ...(author.twitter ? [author.twitter] : [])] }),
             knowsAbout:   author.specialties,
           }),
         }}

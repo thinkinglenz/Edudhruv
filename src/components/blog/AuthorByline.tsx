@@ -36,16 +36,6 @@ export default function AuthorByline({ postSlug, categorySlug, publishedAt, read
           <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mt-0.5">{author.role}</p>
           <p className="text-sm text-gray-600 mt-2 leading-relaxed">{author.bio}</p>
           <div className="flex gap-3 mt-3">
-            {author.linkedin && (
-              <a href={author.linkedin} target="_blank" rel="noopener" className="text-xs hover:underline" style={{ color: "#3AAFE5" }}>
-                LinkedIn →
-              </a>
-            )}
-            {author.twitter && (
-              <a href={author.twitter} target="_blank" rel="noopener" className="text-xs hover:underline" style={{ color: "#3AAFE5" }}>
-                Twitter →
-              </a>
-            )}
             <Link href={`/author/${author.slug}`} className="text-xs hover:underline" style={{ color: "#3AAFE5" }}>
               More from {author.name.split(" ")[0]} →
             </Link>

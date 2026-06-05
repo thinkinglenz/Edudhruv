@@ -105,7 +105,6 @@ export default async function PostPage({
       jobTitle:     author.role,
       description:  author.bio,
       url:          `https://www.edudhruv.com/author/${author.slug}`,
-      ...(author.linkedin && { sameAs: [author.linkedin, ...(author.twitter ? [author.twitter] : [])] }),
     },
     publisher: {
       "@type": "Organization",
