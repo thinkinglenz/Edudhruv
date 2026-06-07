@@ -1,5 +1,6 @@
 import AdminHeader from "@/components/admin/AdminHeader";
 import Pagination from "@/components/admin/Pagination";
+import ShareButton from "@/components/admin/ShareButton";
 import { CATEGORIES } from "@/lib/categories";
 import { MOCK_POSTS } from "@/lib/mock-data";
 import Link from "next/link";
@@ -19,6 +20,8 @@ interface PostRow {
   status: string;
   created_at: string;
   reading_time?: number;
+  excerpt?: string | null;
+  featured_image_url?: string | null;
 }
 
 async function getPosts(category: string, status: string, search: string, page: number) {
@@ -40,7 +43,7 @@ async function getPosts(category: string, status: string, search: string, page: 
   const db = getServiceClient();
   let query = db
     .from("posts")
-    .select("id,title,slug,category_slug,status,created_at,reading_time", { count: "exact" })
+    .select("id,title,slug,category_slug,status,created_at,reading_time,excerpt,featured_image_url", { count: "exact" })
     .order("created_at", { ascending: false });
   if (category) query = query.eq("category_slug", category);
   if (status)   query = query.eq("status", status);
@@ -65,6 +68,7 @@ export default async function PostsPage({
   const page     = parseInt(searchParams.page || "1");
 
   const { posts, total } = await getPosts(category, status, search, page);
+  const siteUrl = (process.env.SITE_URL || "https://www.edudhruv.com").replace(/\/$/, "");
 
   // Stats — total per status
   const allPosts = MOCK_POSTS as any[];
@@ -141,10 +145,20 @@ export default async function PostsPage({
                     </td>
                     <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">{p.created_at ? fmt(p.created_at) : "—"}</td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2.5">
                         <a href={`/${p.category_slug}/${p.slug}`} target="_blank"
                           className="text-xs hover:underline" style={{ color: "#3AAFE5" }}>View</a>
                         <Link href={`/admin/posts/${p.id}/edit`} className="text-xs text-yellow-400 hover:underline">Edit</Link>
+                        <ShareButton
+                          post={{
+                            slug: p.slug,
+                            title: p.title,
+                            excerpt: p.excerpt ?? null,
+                            category_slug: p.category_slug,
+                            featured_image_url: p.featured_image_url ?? null,
+                          }}
+                          siteUrl={siteUrl}
+                        />
                         <button className="text-xs text-red-400 hover:underline">Delete</button>
                       </div>
                     </td>
