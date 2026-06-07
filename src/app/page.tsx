@@ -3,7 +3,6 @@ import { getRecentPosts, getPostsByCategoryMap } from "@/lib/supabase";
 import { CATEGORIES, getCategoryBySlug } from "@/lib/categories";
 import PostCard from "@/components/blog/PostCard";
 import LeadForm from "@/components/blog/LeadForm";
-import CategorySlider from "@/components/home/CategorySlider";
 import HeroBanner from "@/components/home/HeroBanner";
 import CategorySection from "@/components/home/CategorySection";
 import ScholarshipsWidget from "@/components/home/ScholarshipsWidget";
@@ -36,9 +35,6 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* ── Category slider ─────────────────────────────────────────── */}
-      <CategorySlider active="all" />
-
       {/* ── Hero rotating banner ────────────────────────────────────── */}
       <HeroBanner posts={heroPosts} sponsored={SPONSORED_SLIDES} />
 
