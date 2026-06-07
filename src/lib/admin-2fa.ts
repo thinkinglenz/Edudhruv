@@ -13,25 +13,32 @@ const IS_MOCK = !process.env.NEXT_PUBLIC_SUPABASE_URL ||
   process.env.SUPABASE_SERVICE_ROLE_KEY === "placeholder";
 
 export interface AdminSettings {
-  totp_enabled: boolean;
-  totp_secret:  string | null;
-  backup_codes: string[];
+  totp_enabled:      boolean;
+  totp_secret:       string | null;
+  backup_codes:      string[];
+  email_2fa_enabled: boolean;
+  email_2fa_address: string | null;
 }
 
 export async function getAdminSettings(): Promise<AdminSettings> {
   if (IS_MOCK) {
-    return { totp_enabled: false, totp_secret: null, backup_codes: [] };
+    return {
+      totp_enabled: false, totp_secret: null, backup_codes: [],
+      email_2fa_enabled: false, email_2fa_address: null,
+    };
   }
   const { getServiceClient } = await import("@/lib/supabase");
   const { data } = await getServiceClient()
     .from("admin_settings")
-    .select("totp_enabled,totp_secret,backup_codes")
+    .select("totp_enabled,totp_secret,backup_codes,email_2fa_enabled,email_2fa_address")
     .eq("id", 1)
     .maybeSingle();
   return {
-    totp_enabled: !!data?.totp_enabled,
-    totp_secret:  data?.totp_secret || null,
-    backup_codes: data?.backup_codes || [],
+    totp_enabled:      !!data?.totp_enabled,
+    totp_secret:       data?.totp_secret || null,
+    backup_codes:      data?.backup_codes || [],
+    email_2fa_enabled: !!data?.email_2fa_enabled,
+    email_2fa_address: data?.email_2fa_address || null,
   };
 }
 
@@ -43,6 +50,8 @@ export async function updateAdminSettings(patch: Partial<AdminSettings>): Promis
     if ("totp_enabled" in patch) update.totp_enabled = patch.totp_enabled;
     if ("totp_secret"  in patch) update.totp_secret  = patch.totp_secret;
     if ("backup_codes" in patch) update.backup_codes = patch.backup_codes;
+    if ("email_2fa_enabled" in patch) update.email_2fa_enabled = patch.email_2fa_enabled;
+    if ("email_2fa_address" in patch) update.email_2fa_address = patch.email_2fa_address;
     if (patch.totp_enabled === true) update.enabled_at = new Date().toISOString();
 
     const { error } = await getServiceClient()

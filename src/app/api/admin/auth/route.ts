@@ -2,8 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { ADMIN_COOKIE, COOKIE_MAX_AGE, makeSessionToken } from "@/lib/admin-auth";
 import { getAdminSettings, updateAdminSettings, consumeBackupCode } from "@/lib/admin-2fa";
 import { generateSecret, generateProvisioningURI, verifyTOTP, generateBackupCodes } from "@/lib/totp";
+import {
+  generateCode,
+  storeCode,
+  verifyEmailCode,
+  sendCodeEmail,
+  canResend,
+  maskEmail,
+  getEmailSettings,
+} from "@/lib/admin-email-2fa";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "EduDhruv@Admin2025";
+
+// Emergency escape hatch — set DISABLE_2FA=true on Vercel to skip ALL 2FA
+const DISABLE_2FA = process.env.DISABLE_2FA === "true";
 
 function setCookie(res: NextResponse, value: string) {
   res.cookies.set({
@@ -30,11 +42,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid password" }, { status: 401 });
     }
 
-    // Check if 2FA is enabled
+    // Emergency bypass — only used if admin loses email/authenticator access
+    if (DISABLE_2FA) {
+      const res = NextResponse.json({ success: true, requires2FA: false });
+      setCookie(res, makeSessionToken(ADMIN_PASSWORD, "admin_ok"));
+      return res;
+    }
+
+    // Check if any 2FA is enabled
     const settings = await getAdminSettings();
+
+    // ── Email 2FA preferred when available ─────────────────────
+    if (settings.email_2fa_enabled && settings.email_2fa_address) {
+      const code = generateCode();
+      await storeCode(code);
+      const sent = await sendCodeEmail(code, settings.email_2fa_address);
+
+      const res = NextResponse.json({
+        success: true,
+        requires2FA: true,
+        method: "email",
+        emailHint: maskEmail(settings.email_2fa_address),
+        warning: sent ? undefined : "Email could not be sent — check Vercel logs for the code (RESEND_API_KEY may be missing)",
+      });
+      setCookie(res, makeSessionToken(ADMIN_PASSWORD, "pwd_pending"));
+      return res;
+    }
+
+    // ── TOTP fallback ──────────────────────────────────────────
     if (settings.totp_enabled) {
-      // Issue PARTIAL session — only /admin/login allowed until 2FA verified
-      const res = NextResponse.json({ success: true, requires2FA: true });
+      const res = NextResponse.json({ success: true, requires2FA: true, method: "totp" });
       setCookie(res, makeSessionToken(ADMIN_PASSWORD, "pwd_pending"));
       return res;
     }
@@ -46,20 +83,58 @@ export async function POST(req: NextRequest) {
   }
 
   // ──────────────────────────────────────────────────────────────
+  // STEP 1.5 — Resend email code (rate-limited 60s)
+  // ──────────────────────────────────────────────────────────────
+  if (action === "resend-code") {
+    const settings = await getAdminSettings();
+    if (!settings.email_2fa_enabled || !settings.email_2fa_address) {
+      return NextResponse.json({ error: "Email 2FA is not enabled" }, { status: 400 });
+    }
+    const rl = await canResend();
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: `Wait ${rl.secondsLeft}s before requesting a new code` },
+        { status: 429 }
+      );
+    }
+    const code = generateCode();
+    await storeCode(code);
+    const sent = await sendCodeEmail(code, settings.email_2fa_address);
+    return NextResponse.json({
+      success: true,
+      emailHint: maskEmail(settings.email_2fa_address),
+      warning: sent ? undefined : "Email send failed — check server logs",
+    });
+  }
+
+  // ──────────────────────────────────────────────────────────────
   // STEP 2 — Verify TOTP code (or backup code)
   // ──────────────────────────────────────────────────────────────
   if (action === "verify-2fa") {
     if (!code) return NextResponse.json({ error: "Code required" }, { status: 400 });
 
     const settings = await getAdminSettings();
-    if (!settings.totp_enabled || !settings.totp_secret) {
+    if (!settings.totp_enabled && !settings.email_2fa_enabled) {
       return NextResponse.json({ error: "2FA is not enabled" }, { status: 400 });
     }
 
-    // Try TOTP first
-    let valid = verifyTOTP(settings.totp_secret, code);
+    let valid = false;
+    let errorMsg = "Invalid or expired code";
 
-    // Then try backup code
+    // 1) Try email code first if enabled
+    if (settings.email_2fa_enabled) {
+      const result = await verifyEmailCode(code);
+      if (result === "ok") valid = true;
+      else if (result === "expired") errorMsg = "Code expired — request a new one";
+      else if (result === "locked")  errorMsg = "Too many attempts — request a new code";
+    }
+
+    // 2) Try TOTP if email failed AND TOTP is enabled
+    if (!valid && settings.totp_enabled && settings.totp_secret) {
+      if (verifyTOTP(settings.totp_secret, code)) valid = true;
+    }
+
+    // 3) Try backup code (works for either method)
     if (!valid) {
       const ok = await consumeBackupCode(code);
       if (ok) valid = true;
@@ -67,7 +142,7 @@ export async function POST(req: NextRequest) {
 
     if (!valid) {
       await new Promise(r => setTimeout(r, 800));
-      return NextResponse.json({ error: "Invalid or expired code" }, { status: 401 });
+      return NextResponse.json({ error: errorMsg }, { status: 401 });
     }
 
     // Upgrade to full session
@@ -170,7 +245,48 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       enabled:           s.totp_enabled,
       backupCodesCount:  s.backup_codes.length,
+      emailEnabled:      s.email_2fa_enabled,
+      emailAddress:      s.email_2fa_address ? maskEmail(s.email_2fa_address) : null,
     });
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // EMAIL 2FA — Enable / disable / change address
+  // ──────────────────────────────────────────────────────────────
+  if (action === "enable-email-2fa") {
+    const email = body.email as string | undefined;
+    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return NextResponse.json({ error: "Valid email required" }, { status: 400 });
+    }
+    const ok = await updateAdminSettings({
+      email_2fa_enabled: true,
+      email_2fa_address: email,
+    });
+    if (!ok) return NextResponse.json({ error: "Could not save" }, { status: 500 });
+
+    // Send a test code immediately so admin can confirm email works
+    const testCode = generateCode();
+    await storeCode(testCode);
+    const sent = await sendCodeEmail(testCode, email);
+    return NextResponse.json({
+      success: true,
+      testSent: sent,
+      message: sent
+        ? `Email 2FA enabled. A test code was sent to ${maskEmail(email)} — check your inbox.`
+        : "Email 2FA enabled BUT email send failed. Check RESEND_API_KEY on Vercel.",
+    });
+  }
+
+  if (action === "disable-email-2fa") {
+    if (!password || password !== ADMIN_PASSWORD) {
+      return NextResponse.json({ error: "Password required" }, { status: 401 });
+    }
+    const ok = await updateAdminSettings({
+      email_2fa_enabled: false,
+      email_2fa_address: null,
+    });
+    if (!ok) return NextResponse.json({ error: "Could not disable" }, { status: 500 });
+    return NextResponse.json({ success: true });
   }
 
   return NextResponse.json({ error: "Invalid action" }, { status: 400 });

@@ -21,15 +21,26 @@ function AdminLoginInner() {
   const [code, setCode]         = useState("");
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
+  const [method, setMethod]     = useState<"email" | "totp">("totp");
+  const [emailHint, setEmailHint] = useState<string>("");
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [info, setInfo]         = useState("");
 
   // Skip directly to 2FA if URL says ?step=2fa
   useEffect(() => {
     if (params.get("step") === "2fa") setStep("2fa");
   }, [params]);
 
+  // Tick down resend cooldown
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown(s => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
   async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true); setError("");
+    setLoading(true); setError(""); setInfo("");
     const res = await fetch("/api/admin/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -39,11 +50,32 @@ function AdminLoginInner() {
     if (!res.ok) {
       setError(data.error || "Login failed");
     } else if (data.requires2FA) {
+      setMethod(data.method || "totp");
+      if (data.emailHint) setEmailHint(data.emailHint);
+      if (data.warning)   setError(data.warning);
+      if (data.method === "email") setResendCooldown(60);
       setStep("2fa");
     } else {
       router.push(from); router.refresh();
     }
     setLoading(false);
+  }
+
+  async function handleResend() {
+    if (resendCooldown > 0) return;
+    setError(""); setInfo("");
+    const res = await fetch("/api/admin/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "resend-code" }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error || "Could not resend");
+    } else {
+      setInfo(`✉️ New code sent to ${data.emailHint}`);
+      setResendCooldown(60);
+    }
   }
 
   async function handleCodeSubmit(e: React.FormEvent) {
@@ -87,7 +119,9 @@ function AdminLoginInner() {
           <p className="text-gray-400 text-sm text-center mb-6">
             {step === "pwd"
               ? "Enter your admin password to continue"
-              : "Enter the 6-digit code from your authenticator app"}
+              : method === "email"
+                ? <>We emailed a 6-digit code to <strong className="text-white">{emailHint}</strong></>
+                : "Enter the 6-digit code from your authenticator app"}
           </p>
 
           {/* STEP 1: Password */}
@@ -135,10 +169,17 @@ function AdminLoginInner() {
                   className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3 text-center text-2xl tracking-[0.5em] font-mono focus:outline-none focus:border-brand placeholder-gray-500"
                 />
                 <p className="text-[10px] text-gray-500 mt-1.5">
-                  Or use one of your backup codes (e.g. ABCD-1234)
+                  {method === "email"
+                    ? "Code expires in 10 minutes. Check spam folder if you don't see it."
+                    : "Or use one of your backup codes (e.g. ABCD-1234)"}
                 </p>
               </div>
 
+              {info && (
+                <div className="bg-blue-900/40 border border-blue-700 text-blue-300 rounded-lg px-4 py-2.5 text-sm">
+                  {info}
+                </div>
+              )}
               {error && (
                 <div className="bg-red-900/40 border border-red-700 text-red-300 rounded-lg px-4 py-2.5 text-sm">
                   🚫 {error}
@@ -151,8 +192,17 @@ function AdminLoginInner() {
                 {loading ? "Verifying…" : "Verify & Sign In →"}
               </button>
 
+              {method === "email" && (
+                <button type="button" onClick={handleResend} disabled={resendCooldown > 0}
+                  className="w-full text-center text-xs text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed">
+                  {resendCooldown > 0
+                    ? `Resend code in ${resendCooldown}s`
+                    : "✉️ Resend code"}
+                </button>
+              )}
+
               <button type="button"
-                onClick={() => { setStep("pwd"); setCode(""); setError(""); }}
+                onClick={() => { setStep("pwd"); setCode(""); setError(""); setInfo(""); }}
                 className="w-full text-center text-xs text-gray-500 hover:text-gray-300">
                 ← Back to password
               </button>
@@ -160,7 +210,9 @@ function AdminLoginInner() {
           )}
 
           <p className="text-center text-xs text-gray-600 mt-6">
-            EduDhruv Admin · Secured by {step === "2fa" ? "Password + 2FA" : "Password"}
+            EduDhruv Admin · Secured by {step === "2fa"
+              ? (method === "email" ? "Password + Email 2FA" : "Password + Authenticator 2FA")
+              : "Password"}
           </p>
         </div>
       </div>
