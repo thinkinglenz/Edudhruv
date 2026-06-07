@@ -33,8 +33,9 @@ import time
 import logging
 import re
 import urllib.request
+import urllib.parse
 import urllib.error
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date, timedelta
 from pathlib import Path
 
 try:
@@ -56,6 +57,9 @@ SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 # Web search requires Sonnet or higher (Haiku doesn't support tools/web-search yet)
 CLAUDE_MODEL         = os.getenv("CLAUDE_MODEL_SCHOLARSHIP", "claude-sonnet-4-5")
 MAX_TOKENS           = int(os.getenv("MAX_TOKENS", "16000"))
+UNSPLASH_KEY         = os.getenv("UNSPLASH_ACCESS_KEY", "")
+
+TODAY = date.today()  # used for deadline validation + prompt context
 
 
 # ─── SUPABASE HTTP ───────────────────────────────────────────────────────────
@@ -115,15 +119,22 @@ def mark_failed(university_id: str, error: str):
 
 
 # ─── CLAUDE WEB SEARCH ───────────────────────────────────────────────────────
-SYSTEM_PROMPT = """You are a senior education counsellor at EduDhruv — India's trusted study-abroad guidance platform.
+SYSTEM_PROMPT = f"""You are a senior education counsellor at EduDhruv — India's trusted study-abroad guidance platform.
+
+TODAY'S DATE IS {TODAY.isoformat()}. Any scholarship deadline you publish MUST be AFTER this date.
 
 Your job: research 100% funded scholarships at a specific university, find ones that Indian students can apply for, and produce a deeply useful blog post.
 
 Use the web_search tool aggressively. Search the official university website, official scholarship pages, and reputable sources. Verify everything against the official source URL before reporting it.
 
+ABSOLUTE RULES:
+1. NEVER publish a scholarship whose application_deadline is before {TODAY.isoformat()} — those are EXPIRED.
+2. If the current cycle's deadline has passed, find the NEXT cycle's deadline (usually announced 6-12 months in advance).
+3. If you cannot find ANY future deadline for this university's 100% funded scholarship, set success=false and explain.
+4. Use the actual upcoming intake (e.g. Fall {TODAY.year + 1} or {TODAY.year + 1}-{TODAY.year + 2} academic year).
+
 Quality standards:
 - Indian-context lens (mention INR equivalents, Indian students who can apply, GRE/IELTS scores accepted)
-- 2025/2026 data (current cycle only — ignore anything older)
 - Specific, verified, useful — not generic
 - Disclose if any field is uncertain (say "verify with university") rather than making up numbers
 """
@@ -137,7 +148,8 @@ def claude_research(university: dict) -> dict:
     url = f"{university.get('official_website') or 'their official website'}"
     courses_str = ", ".join(university.get("popular_courses") or [])
 
-    prompt = f"""Research 100% FUNDED scholarships at:
+    next_year = TODAY.year + 1
+    prompt = f"""Today is {TODAY.isoformat()}. Research 100% FUNDED scholarships at:
 
   University: {university['name']}
   Country:    {university['country']}
@@ -146,17 +158,23 @@ def claude_research(university: dict) -> dict:
   Popular courses: {courses_str}
 
 Steps:
-1. Search the web for "100% funded scholarships {university['name']} international students 2026"
+1. Search the web for "100% funded scholarships {university['name']} international students {next_year}"
 2. Visit the official scholarship/financial-aid pages on {url}
-3. Find scholarships that:
+3. Search for "{university['name']} scholarship deadline {next_year}" to find the upcoming cycle
+4. Find scholarships that:
    - Cover 100% of tuition + most/all living expenses (or full tuition only — still counts if amount is significant)
    - Are open to Indian students (international/non-residents)
-   - Have an upcoming 2025-2026 or 2026-2027 deadline
-4. Pick the BEST ONE that offers the most generous coverage for Indian students.
-5. Verify the deadline, amount, and eligibility against the official source.
-6. Find ONE recent scholarship URL on the university domain to cite.
+   - **Have an application_deadline AFTER {TODAY.isoformat()}** (the current open cycle, not the closed one)
+5. Pick the BEST ONE that offers the most generous coverage for Indian students.
+6. **Verify the deadline date** against the official source — many websites show last year's expired deadline.
+   If the official page shows "Applications closed" or a past date, the NEXT cycle deadline is usually published
+   on the same page or under "When to apply" / "Important dates" / "{next_year} cycle".
+7. Find ONE recent scholarship URL on the university domain to cite.
 
 Then call the `publish_scholarship` tool with all fields filled in.
+
+CRITICAL: If you cannot find a deadline AFTER {TODAY.isoformat()}, do NOT make one up.
+Call the tool with success=false and notes="Could not verify a future deadline for this scholarship cycle."
 
 If you cannot find any 100% funded scholarship for this university after searching, call the tool with success=false and explain why in `notes`.
 """
@@ -289,6 +307,54 @@ If you cannot find any 100% funded scholarship for this university after searchi
     raise ValueError(f"No publish_scholarship tool call. Last response: {json.dumps(res2)[:600]}")
 
 
+# ─── UNSPLASH IMAGE ──────────────────────────────────────────────────────────
+def unsplash_image(query: str) -> dict | None:
+    """Fetch a relevant featured image from Unsplash."""
+    if not UNSPLASH_KEY:
+        log.warning("  No UNSPLASH_ACCESS_KEY — post will have no featured image")
+        return None
+    try:
+        q = urllib.parse.quote(f"{query} university campus")
+        url = f"https://api.unsplash.com/photos/random?query={q}&orientation=landscape&content_filter=high"
+        req = urllib.request.Request(url, headers={"Authorization": f"Client-ID {UNSPLASH_KEY}"})
+        with urllib.request.urlopen(req, timeout=10) as res:
+            data = json.loads(res.read())
+        log.info(f"  ✓ Featured image fetched from Unsplash")
+        return {
+            "url": data["urls"]["regular"],
+            "alt": data.get("alt_description") or query,
+            "credit": (
+                f'Photo by <a href="{data["user"]["links"]["html"]}?utm_source=edudhruv&utm_medium=referral" '
+                f'target="_blank" rel="noopener">{data["user"]["name"]}</a> on '
+                f'<a href="https://unsplash.com?utm_source=edudhruv&utm_medium=referral" target="_blank" rel="noopener">Unsplash</a>'
+            ),
+        }
+    except Exception as e:
+        log.warning(f"  Unsplash error (continuing without image): {e}")
+        return None
+
+
+# ─── DEADLINE VALIDATION ─────────────────────────────────────────────────────
+def validate_deadline(deadline_str: str | None) -> tuple[bool, str]:
+    """
+    Returns (is_valid, reason). A valid deadline is:
+      - A parseable ISO date YYYY-MM-DD
+      - In the future (after today)
+    Empty/null is also rejected — we don't want "rolling" without a date.
+    """
+    if not deadline_str:
+        return False, "missing deadline"
+    try:
+        dl = date.fromisoformat(deadline_str.strip()[:10])
+    except (ValueError, AttributeError):
+        return False, f"unparseable date '{deadline_str}'"
+    if dl < TODAY:
+        return False, f"deadline {dl.isoformat()} is in the PAST (today is {TODAY.isoformat()})"
+    if dl > TODAY + timedelta(days=730):
+        return False, f"deadline {dl.isoformat()} is suspiciously far in the future"
+    return True, ""
+
+
 # ─── SAVE TO DB ──────────────────────────────────────────────────────────────
 def save_scholarship_and_post(university: dict, sch: dict) -> str:
     """Save scholarship row and blog post row. Returns post slug."""
@@ -336,7 +402,11 @@ def save_scholarship_and_post(university: dict, sch: dict) -> str:
 
     full_content = intro + "\n" + facts_box + "\n" + body
 
-    # 3. Save the blog post
+    # 3. Fetch a featured image from Unsplash (university name + country = relevant campus shot)
+    image_query = f"{university['name']} {university['country']}"
+    image = unsplash_image(image_query) or unsplash_image(f"{university['country']} scholarship students")
+
+    # 4. Save the blog post
     post = {
         "title":                sch["blog_title"],
         "slug":                 slug,
@@ -346,9 +416,9 @@ def save_scholarship_and_post(university: dict, sch: dict) -> str:
         "meta_title":           sch["blog_title"][:70],
         "meta_description":     sch.get("meta_description", "")[:160],
         "focus_keyword":        sch.get("focus_keyword", "")[:100],
-        "featured_image_url":   None,   # will fall back to default header
-        "featured_image_alt":   sch["scholarship_name"],
-        "featured_image_credit": None,
+        "featured_image_url":   image["url"]    if image else None,
+        "featured_image_alt":   image["alt"]    if image else sch["scholarship_name"],
+        "featured_image_credit": image["credit"] if image else None,
         "reading_time":         8,
         "tags":                 ["scholarship", "100% funded", university["country"], university["name"]],
         "status":               "published",
@@ -417,13 +487,23 @@ def main():
     log.info(f"  ✓ Found: {sch.get('scholarship_name', '?')}")
     log.info(f"  Deadline: {sch.get('application_deadline', '?')}")
 
-    # 3. Save
+    # 3. Validate the deadline is in the future — refuse expired scholarships
+    ok, why = validate_deadline(sch.get("application_deadline"))
+    if not ok:
+        msg = f"REJECTED — {why}"
+        log.warning(f"  {msg}")
+        sb_patch("universities", f"id=eq.{uni['id']}",
+                 {"status": "skipped", "research_error": msg[:500]})
+        log.info(f"  University marked as skipped. Re-run will pick the next one.")
+        return
+
+    # 4. Save
     slug = save_scholarship_and_post(uni, sch)
 
-    # 4. Mark done
+    # 5. Mark done
     mark_researched(uni["id"])
 
-    # 5. Refresh cache
+    # 6. Refresh cache
     trigger_revalidation(slug)
 
     log.info(f"✅ Done — https://edudhruv.com/scholarship/{slug}")
