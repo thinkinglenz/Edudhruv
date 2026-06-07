@@ -350,6 +350,18 @@ CURATED_IMAGES: dict[str, dict] = {
         "url": "https://ethz.ch/etc/designs/ethz/img/header/eth_default_og.jpg",
         "credit": 'Photo: <a href="https://ethz.ch/" target="_blank" rel="noopener">ETH Zurich (official)</a>',
     },
+    "University of Oxford": {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Radcliffe_Camera%2C_Oxford.jpg",
+        "credit": 'Photo: <a href="https://commons.wikimedia.org/wiki/File:Radcliffe_Camera,_Oxford.jpg" target="_blank" rel="noopener">Radcliffe Camera, Oxford via Wikimedia Commons</a>',
+    },
+    "University of Cambridge": {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/4/46/Kings_College_Cambridge_Chapel_from_the_river.jpg",
+        "credit": 'Photo: <a href="https://commons.wikimedia.org/wiki/File:Kings_College_Cambridge_Chapel_from_the_river.jpg" target="_blank" rel="noopener">King\'s College Chapel, Cambridge via Wikimedia Commons</a>',
+    },
+    "Imperial College London": {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/9/97/Royal_School_of_Mines_Imperial_College_London_2020_01.jpg",
+        "credit": 'Photo: <a href="https://commons.wikimedia.org/wiki/File:Royal_School_of_Mines_Imperial_College_London_2020_01.jpg" target="_blank" rel="noopener">Royal School of Mines, Imperial College London via Wikimedia Commons</a>',
+    },
 }
 
 # Filter out non-campus images returned by Commons search
