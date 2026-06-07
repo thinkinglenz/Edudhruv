@@ -170,6 +170,21 @@ export default function ShareButton({ post, siteUrl }: Props) {
     setImgError("");
   }
 
+  async function quickDownload() {
+    if (!post.featured_image_url) {
+      setImgState("error");
+      setImgError("no image");
+      setTimeout(() => { setImgState("idle"); setImgError(""); }, 2000);
+      return;
+    }
+    setImgState("downloading");
+    const filename = post.slug.replace(/[^a-z0-9-]/gi, "-");
+    const result = await downloadAsPng(post.featured_image_url, filename);
+    setImgState(result.ok ? "done" : "error");
+    if (!result.ok) setImgError(result.error || "");
+    setTimeout(() => { setImgState("idle"); setImgError(""); }, 2500);
+  }
+
   return (
     <>
       {/* Inline platform icons — one click opens modal pre-selected to that platform */}
@@ -185,9 +200,31 @@ export default function ShareButton({ post, siteUrl }: Props) {
             {p.icon}
           </button>
         ))}
+        {/* Direct PNG download button */}
+        <button
+          onClick={quickDownload}
+          title={
+            !post.featured_image_url ? "No featured image to download" :
+            imgState === "done"  ? "Downloaded!" :
+            imgState === "error" ? `Failed: ${imgError || "unknown"}` :
+                                   "Download featured image as PNG"
+          }
+          disabled={!post.featured_image_url || imgState === "downloading"}
+          className={`w-6 h-6 rounded flex items-center justify-center text-[11px] font-bold transition-all hover:opacity-80 hover:scale-110 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 ${
+            imgState === "done"        ? "bg-green-600 text-white" :
+            imgState === "error"       ? "bg-red-600 text-white"   :
+            imgState === "downloading" ? "bg-gray-700 text-white"  :
+                                         "bg-gray-700 text-gray-200 hover:bg-gray-600"
+          }`}
+        >
+          {imgState === "downloading" ? "⏳" :
+           imgState === "done"        ? "✓"  :
+           imgState === "error"       ? "✕"  :
+                                        "📥"}
+        </button>
         <button
           onClick={openModal}
-          title="More options — Email, Download Image, Edit caption"
+          title="More options — Email, Edit caption, Preview"
           className="text-xs px-1.5 text-gray-500 hover:text-white"
         >
           ⋯
