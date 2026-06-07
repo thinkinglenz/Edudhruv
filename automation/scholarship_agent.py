@@ -307,11 +307,232 @@ If you cannot find any 100% funded scholarship for this university after searchi
     raise ValueError(f"No publish_scholarship tool call. Last response: {json.dumps(res2)[:600]}")
 
 
-# ─── UNSPLASH IMAGE ──────────────────────────────────────────────────────────
+# ─── IMAGE SOURCES ───────────────────────────────────────────────────────────
+# Strategy for finding an authentic university image:
+#   1. Curated dict — hand-picked Wikimedia URLs for top universities (most reliable)
+#   2. Official website og:image — the photo THEY chose to represent themselves
+#   3. Wikimedia Commons — strict-filtered search (CC-licensed)
+#   4. Unsplash — last resort (generic; not the actual university)
+# Once chosen, the URL is cached in universities.image_url so we never re-fetch.
+
+# Hand-curated map of universities → verified-working Wikimedia URLs
+# Add more here as you find better images for specific universities.
+CURATED_IMAGES: dict[str, dict] = {
+    "Massachusetts Institute of Technology": {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/3/3d/MIT_Main_Campus_Aerial.jpg",
+        "credit": 'Photo: <a href="https://commons.wikimedia.org/wiki/File:MIT_Main_Campus_Aerial.jpg" target="_blank" rel="noopener">DrKenneth via Wikimedia Commons</a> · CC BY 3.0',
+    },
+    "Stanford University": {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/8/83/Stanford_University_Aerial_View.jpg",
+        "credit": 'Photo: <a href="https://commons.wikimedia.org/wiki/File:Stanford_University_Aerial_View.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>',
+    },
+    "Harvard University": {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/0/0b/Harvard_University_main_campus_aerial.JPG",
+        "credit": 'Photo: <a href="https://commons.wikimedia.org/wiki/File:Harvard_University_main_campus_aerial.JPG" target="_blank" rel="noopener">Wikimedia Commons</a>',
+    },
+    "National University of Singapore": {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/2/2c/NUS_Bukit_Time_Law_Campus_from_the_air._Shot_in_2015.jpg",
+        "credit": 'Photo: <a href="https://commons.wikimedia.org/wiki/File:NUS_Bukit_Time_Law_Campus_from_the_air._Shot_in_2015.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>',
+    },
+    "University of California Berkeley": {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/9/9f/University_of_California_Berkeley_aerial_view_by_drone.jpg",
+        "credit": 'Photo: <a href="https://commons.wikimedia.org/wiki/File:University_of_California_Berkeley_aerial_view_by_drone.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>',
+    },
+    "Yale University": {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/e/e5/Yale_Central_Campus.jpg",
+        "credit": 'Photo: <a href="https://commons.wikimedia.org/wiki/File:Yale_Central_Campus.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>',
+    },
+    "Cornell University": {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/f/f3/Cornell_University_-_Aerial_view_of_Agriculture_campus.jpg",
+        "credit": 'Photo: <a href="https://commons.wikimedia.org/wiki/File:Cornell_University_-_Aerial_view_of_Agriculture_campus.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>',
+    },
+    "ETH Zurich": {
+        "url": "https://ethz.ch/etc/designs/ethz/img/header/eth_default_og.jpg",
+        "credit": 'Photo: <a href="https://ethz.ch/" target="_blank" rel="noopener">ETH Zurich (official)</a>',
+    },
+}
+
+# Filter out non-campus images returned by Commons search
+_BAD_KEYWORDS = ("logo", "seal", "crest", "map", "diagram", "plan", "chart", "graph",
+                 "_old", "historical", "vintage", "1800", "blueprint", "drawing",
+                 "illustration", "sketch", "painting", "portrait")
+
+# Match historical year patterns like "_1924" or "1880s"
+_HISTORICAL_YEAR_RE = re.compile(r"(?:^|[^0-9])(18\d\d|19[0-7]\d)s?(?:[^0-9]|$)")
+
+# Common university name → key tokens that must appear in the filename for it to be relevant.
+# E.g. "University of Oxford" → ["oxford"] (NOT "university" — too generic)
+def _key_tokens(name: str) -> list[str]:
+    """Extract distinguishing tokens from a university name."""
+    stopwords = {"university", "of", "the", "and", "college", "school",
+                 "institute", "academy", "national"}
+    tokens = [t.lower() for t in re.findall(r"[A-Za-z]+", name)
+              if len(t) > 2 and t.lower() not in stopwords]
+    # Also add the acronym (MIT, NUS, ETH...) so "Massachusetts Institute of Technology" → ["MIT", "Massachusetts", "Technology"]
+    caps = "".join(c for c in name if c.isupper())
+    if 2 <= len(caps) <= 5:
+        tokens.append(caps.lower())
+    return tokens
+
+
+def _matches_university(filename: str, tokens: list[str]) -> bool:
+    """Does this filename actually reference the target university?"""
+    lower = filename.lower()
+    return any(t in lower for t in tokens)
+
+
+def _is_good_campus_photo(filename: str, tokens: list[str]) -> bool:
+    """Filter: must be a JPG, must reference the university, must not be a map/logo/historical."""
+    lower = filename.lower()
+    if not (lower.endswith(".jpg") or lower.endswith(".jpeg")):
+        return False  # skip SVG/PNG logos
+    if any(bad in lower for bad in _BAD_KEYWORDS):
+        return False
+    if _HISTORICAL_YEAR_RE.search(lower):
+        return False  # skip 19XX-pre-1980 photos
+    if tokens and not _matches_university(lower, tokens):
+        return False
+    return True
+
+
+def wikimedia_commons_image(query: str, university_name: str | None = None) -> dict | None:
+    """Search Wikimedia Commons for a CC-licensed campus photo of the named university."""
+    tokens = _key_tokens(university_name) if university_name else []
+    try:
+        params = urllib.parse.urlencode({
+            "action": "query",
+            "format": "json",
+            "prop": "imageinfo",
+            "generator": "search",
+            "iiprop": "url|extmetadata|size",
+            "gsrnamespace": 6,
+            "gsrsearch": query,
+            "gsrlimit": 20,
+        })
+        req = urllib.request.Request(
+            f"https://commons.wikimedia.org/w/api.php?{params}",
+            headers={"User-Agent": "EduDhruvScholarshipAgent/1.0 (edudruv@gmail.com)"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as res:
+            data = json.loads(res.read())
+
+        pages = data.get("query", {}).get("pages", {}) or {}
+        sorted_pages = sorted(pages.values(), key=lambda p: p.get("index", 99))
+
+        for page in sorted_pages:
+            title = page.get("title", "")
+            if not _is_good_campus_photo(title, tokens):
+                continue
+            info = (page.get("imageinfo") or [{}])[0]
+            url = info.get("url")
+            # Skip tiny images
+            if (info.get("width") or 0) < 800:
+                continue
+            md  = info.get("extmetadata", {})
+            license_name = md.get("LicenseShortName", {}).get("value", "")
+            artist_html  = md.get("Artist", {}).get("value", "Wikimedia Commons")
+            artist_text = re.sub(r"<[^>]+>", "", artist_html).strip()[:80]
+
+            log.info(f"  ✓ Featured image: Wikimedia Commons — {title[:80]}")
+            return {
+                "url": url,
+                "alt": title.replace("File:", "").rsplit(".", 1)[0].replace("_", " "),
+                "credit": (
+                    f'Photo: <a href="https://commons.wikimedia.org/wiki/{urllib.parse.quote(title)}" '
+                    f'target="_blank" rel="noopener">{artist_text or "Wikimedia Commons"}</a> · {license_name}'
+                ),
+            }
+        return None
+    except Exception as e:
+        log.warning(f"  Wikimedia Commons error: {e}")
+        return None
+
+
+def wikipedia_main_image(university_name: str) -> dict | None:
+    """Fetch the canonical pageimage from the university's Wikipedia article."""
+    try:
+        title = university_name.replace(" ", "_")
+        params = urllib.parse.urlencode({
+            "action": "query",
+            "format": "json",
+            "prop": "pageimages",
+            "piprop": "original",
+            "titles": title,
+        })
+        req = urllib.request.Request(
+            f"https://en.wikipedia.org/w/api.php?{params}",
+            headers={"User-Agent": "EduDhruvScholarshipAgent/1.0 (edudruv@gmail.com)"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as res:
+            data = json.loads(res.read())
+        for page in data.get("query", {}).get("pages", {}).values():
+            orig = page.get("original", {})
+            url = orig.get("source")
+            if url and (url.lower().endswith(".jpg") or url.lower().endswith(".jpeg")):
+                log.info(f"  ✓ Featured image: Wikipedia pageimage for {university_name}")
+                return {
+                    "url": url,
+                    "alt": f"{university_name} campus",
+                    "credit": f'Photo: <a href="https://en.wikipedia.org/wiki/{title}" target="_blank" rel="noopener">Wikipedia</a>',
+                }
+        return None
+    except Exception as e:
+        log.warning(f"  Wikipedia pageimage error: {e}")
+        return None
+
+
+def website_og_image(website_url: str, university_name: str) -> dict | None:
+    """Pull og:image from the university's official homepage."""
+    if not website_url:
+        return None
+    try:
+        req = urllib.request.Request(website_url, headers={
+            "User-Agent": "Mozilla/5.0 (compatible; EduDhruvBot/1.0; +https://edudhruv.com)",
+            "Accept": "text/html,application/xhtml+xml",
+        })
+        with urllib.request.urlopen(req, timeout=10) as res:
+            # Read only first 500KB — og:image is in <head>
+            html = res.read(500_000).decode("utf-8", errors="replace")
+
+        # Try og:image (property=og:image content=URL OR content=URL property=og:image)
+        patterns = [
+            r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\'>]+)["\']',
+            r'<meta[^>]+content=["\']([^"\'>]+)["\'][^>]+property=["\']og:image["\']',
+            r'<meta[^>]+name=["\']twitter:image["\'][^>]+content=["\']([^"\'>]+)["\']',
+        ]
+        img_url = None
+        for p in patterns:
+            m = re.search(p, html, re.I)
+            if m:
+                img_url = m.group(1).strip()
+                break
+
+        if not img_url:
+            return None
+
+        # Resolve relative URLs against the homepage
+        img_url = urllib.parse.urljoin(website_url, img_url)
+
+        # Sanity check — must be an image URL, not an SVG seal
+        if any(bad in img_url.lower() for bad in ("logo", "icon", ".svg")):
+            log.info(f"  Website og:image looks like a logo — skipping: {img_url[:80]}")
+            return None
+
+        log.info(f"  ✓ Featured image: {university_name}'s own website og:image")
+        host = urllib.parse.urlparse(website_url).netloc
+        return {
+            "url": img_url,
+            "alt": f"{university_name} campus",
+            "credit": f'Image courtesy of <a href="{website_url}" target="_blank" rel="noopener">{host}</a>',
+        }
+    except Exception as e:
+        log.warning(f"  Could not fetch og:image from {website_url}: {e}")
+        return None
+
+
 def unsplash_image(query: str) -> dict | None:
-    """Fetch a relevant featured image from Unsplash."""
+    """Last-resort: random Unsplash image (not the actual university)."""
     if not UNSPLASH_KEY:
-        log.warning("  No UNSPLASH_ACCESS_KEY — post will have no featured image")
         return None
     try:
         q = urllib.parse.quote(f"{query} university campus")
@@ -319,19 +540,78 @@ def unsplash_image(query: str) -> dict | None:
         req = urllib.request.Request(url, headers={"Authorization": f"Client-ID {UNSPLASH_KEY}"})
         with urllib.request.urlopen(req, timeout=10) as res:
             data = json.loads(res.read())
-        log.info(f"  ✓ Featured image fetched from Unsplash")
+        log.info(f"  ✓ Featured image: Unsplash fallback for '{query}'")
         return {
             "url": data["urls"]["regular"],
             "alt": data.get("alt_description") or query,
             "credit": (
                 f'Photo by <a href="{data["user"]["links"]["html"]}?utm_source=edudhruv&utm_medium=referral" '
-                f'target="_blank" rel="noopener">{data["user"]["name"]}</a> on '
-                f'<a href="https://unsplash.com?utm_source=edudhruv&utm_medium=referral" target="_blank" rel="noopener">Unsplash</a>'
+                f'target="_blank" rel="noopener">{data["user"]["name"]}</a> on Unsplash'
             ),
         }
     except Exception as e:
-        log.warning(f"  Unsplash error (continuing without image): {e}")
+        log.warning(f"  Unsplash error: {e}")
         return None
+
+
+def get_university_image(university: dict) -> dict | None:
+    """
+    Try multiple sources in order of authenticity:
+      0. Cached image_url in DB (set previously OR overridden by admin)
+      1. Hand-curated CURATED_IMAGES dict (top universities)
+      2. og:image from official website (the photo THEY chose)
+      3. Wikimedia Commons strict search
+      4. Wikipedia article pageimage (often a seal — checked last)
+      5. Unsplash fallback (generic)
+    """
+    name = university["name"]
+    country = university.get("country", "")
+
+    # 0. Cached (or admin-overridden)
+    if university.get("image_url"):
+        log.info(f"  ✓ Using cached image for {name}")
+        return {
+            "url": university["image_url"],
+            "alt": f"{name} campus",
+            "credit": university.get("image_credit"),
+        }
+
+    # 1. Curated dict
+    if name in CURATED_IMAGES:
+        log.info(f"  ✓ Using curated image for {name}")
+        c = CURATED_IMAGES[name]
+        return {"url": c["url"], "alt": f"{name} campus", "credit": c["credit"]}
+
+    # 2. Official website og:image
+    img = website_og_image(university.get("official_website", ""), name)
+    if img:
+        return img
+
+    # 3. Wikimedia Commons strict search
+    log.info(f"  Searching Wikimedia Commons for {name}...")
+    for q in [f"{name} campus aerial", f"{name} campus", f"{name} main building", name]:
+        img = wikimedia_commons_image(q, university_name=name)
+        if img:
+            return img
+
+    # 4. Wikipedia pageimage (often a seal but worth trying)
+    img = wikipedia_main_image(name)
+    if img:
+        return img
+
+    # 5. Unsplash fallback
+    log.info(f"  Falling back to Unsplash for {name}")
+    return unsplash_image(f"{name} {country}")
+
+
+def cache_university_image(university_id: str, img: dict) -> None:
+    """Save the chosen image to universities.image_url so we never re-fetch."""
+    try:
+        sb_patch("universities", f"id=eq.{university_id}",
+                 {"image_url": img["url"], "image_credit": img.get("credit") or ""})
+    except Exception as e:
+        # Column may not exist yet (run migration-university-images.sql) — non-fatal
+        log.warning(f"  Could not cache image to universities table: {e}")
 
 
 # ─── DEADLINE VALIDATION ─────────────────────────────────────────────────────
@@ -402,9 +682,11 @@ def save_scholarship_and_post(university: dict, sch: dict) -> str:
 
     full_content = intro + "\n" + facts_box + "\n" + body
 
-    # 3. Fetch a featured image from Unsplash (university name + country = relevant campus shot)
-    image_query = f"{university['name']} {university['country']}"
-    image = unsplash_image(image_query) or unsplash_image(f"{university['country']} scholarship students")
+    # 3. Fetch an authentic university image (cached → curated → website → Commons → Unsplash)
+    image = get_university_image(university)
+    if image and not university.get("image_url"):
+        # First time we found this image — cache it for next run + admin override
+        cache_university_image(university["id"], image)
 
     # 4. Save the blog post
     post = {
