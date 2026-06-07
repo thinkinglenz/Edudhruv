@@ -1,0 +1,37 @@
+name: Scholarship Discovery Agent
+
+on:
+  # Daily at 00:30 UTC (06:00 IST) — best time before India workday
+  schedule:
+    - cron: "30 0 * * *"
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Claude model — needs Sonnet+ for web_search"
+        required: false
+        default: "claude-sonnet-4-5"
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install --quiet python-dotenv
+
+      - name: Run scholarship discovery
+        env:
+          ANTHROPIC_API_KEY:           ${{ secrets.ANTHROPIC_API_KEY }}
+          SUPABASE_URL:                ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY:   ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Must be Sonnet 4.5+ — Haiku doesn't support web_search yet
+          CLAUDE_MODEL_SCHOLARSHIP:    ${{ inputs.model || 'claude-sonnet-4-5' }}
+          SITE_URL:                    ${{ secrets.SITE_URL }}
+          REVALIDATE_SECRET:           ${{ secrets.REVALIDATE_SECRET }}
+        run: python automation/scholarship_agent.py

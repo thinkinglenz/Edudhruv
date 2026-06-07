@@ -6,6 +6,8 @@ import LeadForm from "@/components/blog/LeadForm";
 import CategorySlider from "@/components/home/CategorySlider";
 import HeroBanner from "@/components/home/HeroBanner";
 import CategorySection from "@/components/home/CategorySection";
+import ScholarshipsWidget from "@/components/home/ScholarshipsWidget";
+import { getRecentScholarships } from "@/lib/scholarships";
 import RotatingBanner, { ListMyAIBanner, ThinkingLenzBanner } from "@/components/ads/RotatingBanner";
 
 // Revalidate every 5 min as a fallback. The blog agent ALSO calls
@@ -24,10 +26,13 @@ const HOMEPAGE_CATEGORIES = [
 ];
 
 export default async function HomePage() {
-  const recentPosts   = await getRecentPosts(8);
-  const heroPosts     = recentPosts.slice(0, 5);
-  const latestGrid    = recentPosts.slice(5);
-  const categoryPosts = await getPostsByCategoryMap(HOMEPAGE_CATEGORIES, 4);
+  const [recentPosts, categoryPosts, scholarships] = await Promise.all([
+    getRecentPosts(8),
+    getPostsByCategoryMap(HOMEPAGE_CATEGORIES, 4),
+    getRecentScholarships(6),
+  ]);
+  const heroPosts  = recentPosts.slice(0, 5);
+  const latestGrid = recentPosts.slice(5);
 
   return (
     <>
@@ -149,6 +154,13 @@ export default async function HomePage() {
       </div>
 
       {/* ── CATEGORY SECTIONS ─────────────────────────────────────── */}
+      {/* ── 💯 Scholarships widget — auto-discovered daily ─────────── */}
+      {scholarships.length > 0 && (
+        <div className="bg-gradient-to-b from-yellow-50/40 to-transparent">
+          <ScholarshipsWidget scholarships={scholarships} />
+        </div>
+      )}
+
       {HOMEPAGE_CATEGORIES.map((slug, i) => {
         const cat = getCategoryBySlug(slug);
         const posts = categoryPosts[slug] || [];

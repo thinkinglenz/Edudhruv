@@ -5,12 +5,12 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 
 const NAV = [
-  { label: "Education Loan",    href: "/education-loan" },
-  { label: "Scholarships",      href: "/scholarship" },
-  { label: "Universities",      href: "/top-universities" },
-  { label: "Students Abroad",   href: "/indian-students-abroad" },
-  { label: "Accommodation",     href: "/student-accommodation" },
-  { label: "Travel",            href: "/travel-essentials" },
+  { label: "Education Loan",     href: "/education-loan" },
+  { label: "100% Scholarships",  href: "/scholarships", badge: "NEW" },
+  { label: "Universities",       href: "/top-universities" },
+  { label: "Students Abroad",    href: "/indian-students-abroad" },
+  { label: "Accommodation",      href: "/student-accommodation" },
+  { label: "Travel",             href: "/travel-essentials" },
 ];
 
 export default function Header() {
@@ -38,9 +38,15 @@ export default function Header() {
             <Link
               key={item.href}
               href={item.href}
-              className="px-2.5 py-1.5 text-sm font-medium text-edu-dark hover:text-brand hover:bg-brand-light rounded-md transition-colors whitespace-nowrap"
+              className="relative px-2.5 py-1.5 text-sm font-medium text-edu-dark hover:text-brand hover:bg-brand-light rounded-md transition-colors whitespace-nowrap inline-flex items-center gap-1.5"
             >
               {item.label}
+              {(item as any).badge && (
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white"
+                      style={{ background: "#F5A71A" }}>
+                  {(item as any).badge}
+                </span>
+              )}
             </Link>
           ))}
         </nav>
