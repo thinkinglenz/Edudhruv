@@ -2,11 +2,29 @@
 const nextConfig = {
   images: {
     remotePatterns: [
+      // Stock + CDN
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "plus.unsplash.com" },
       { protocol: "https", hostname: "**.supabase.co" },
       { protocol: "https", hostname: "m.media-amazon.com" },
       { protocol: "https", hostname: "**.cloudfront.net" },
+
+      // Wikipedia / Wikimedia — scholarship + university images
+      { protocol: "https", hostname: "upload.wikimedia.org" },
+      { protocol: "https", hostname: "**.wikimedia.org" },
+
+      // University domains (curated images + auto-fetched og:images)
+      { protocol: "https", hostname: "**.edu" },           // US universities (mit.edu, stanford.edu, harvard.edu, ...)
+      { protocol: "https", hostname: "**.ac.uk" },         // UK universities (ox.ac.uk, cam.ac.uk, ic.ac.uk, ...)
+      { protocol: "https", hostname: "**.edu.au" },        // Australian universities
+      { protocol: "https", hostname: "**.edu.sg" },        // Singapore (NUS, NTU)
+      { protocol: "https", hostname: "**.edu.hk" },        // Hong Kong
+      { protocol: "https", hostname: "**.utoronto.ca" },   // U of Toronto
+      { protocol: "https", hostname: "**.mcgill.ca" },     // McGill
+      { protocol: "https", hostname: "**.ubc.ca" },        // UBC
+      { protocol: "https", hostname: "ethz.ch" },          // ETH Zurich
+      { protocol: "https", hostname: "**.ethz.ch" },
+      { protocol: "https", hostname: "**.epfl.ch" },       // EPFL
     ],
   },
 
