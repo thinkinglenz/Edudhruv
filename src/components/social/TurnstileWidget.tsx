@@ -67,9 +67,13 @@ export default function TurnstileWidget({ onVerify, onExpire, theme = "light", c
 
       try {
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
-          sitekey: SITE_KEY,
+          sitekey:    SITE_KEY,
           theme,
-          callback: (token: string) => onVerify(token),
+          // Invisible mode — no visible widget unless suspicious activity.
+          // Cleaner UX: no Cloudflare branding on the form.
+          size:       "invisible",
+          appearance: "interaction-only",
+          callback:           (token: string) => onVerify(token),
           "expired-callback": () => onExpire?.(),
           "error-callback":   () => setError("Security check failed. Please refresh."),
         });
@@ -93,8 +97,9 @@ export default function TurnstileWidget({ onVerify, onExpire, theme = "light", c
   }
 
   return (
-    <div className={className}>
-      <div ref={containerRef} />
+    <div className={className} style={{ display: "contents" }}>
+      {/* Invisible Turnstile — only renders an iframe when challenge is needed */}
+      <div ref={containerRef} aria-hidden="true" />
       {error && <p className="text-xs text-red-600 mt-1">⚠ {error}</p>}
     </div>
   );

@@ -193,13 +193,11 @@ export default function LoanPortalPage() {
               </div>
             )}
 
-            {/* Cloudflare Turnstile captcha — silent unless suspicious */}
-            <div className="flex justify-center pt-1">
-              <TurnstileWidget
-                onVerify={setCaptchaToken}
-                onExpire={() => setCaptchaToken(null)}
-              />
-            </div>
+            {/* Invisible Cloudflare Turnstile captcha — no UI shown */}
+            <TurnstileWidget
+              onVerify={setCaptchaToken}
+              onExpire={() => setCaptchaToken(null)}
+            />
 
             <button
               type="submit"

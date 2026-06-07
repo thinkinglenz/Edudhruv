@@ -80,13 +80,11 @@ export default function LeadForm({ sourceSlug }: Props) {
           className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-brand"
         />
 
-        {/* Cloudflare Turnstile captcha — invisible most of the time */}
-        <div className="flex justify-center pt-1">
-          <TurnstileWidget
-            onVerify={setCaptchaToken}
-            onExpire={() => setCaptchaToken(null)}
-          />
-        </div>
+        {/* Invisible Cloudflare Turnstile captcha — no UI shown */}
+        <TurnstileWidget
+          onVerify={setCaptchaToken}
+          onExpire={() => setCaptchaToken(null)}
+        />
 
         <button
           type="submit"

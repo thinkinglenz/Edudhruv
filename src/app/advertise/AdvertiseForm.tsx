@@ -106,9 +106,8 @@ export default function AdvertiseForm() {
                   placeholder="What are you trying to achieve? Targeting which programmes / regions / audience?" />
       </Field>
 
-      <div className="flex justify-center pt-1">
-        <TurnstileWidget onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} />
-      </div>
+      {/* Invisible captcha — no UI shown */}
+      <TurnstileWidget onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} />
 
       <button
         type="submit"
