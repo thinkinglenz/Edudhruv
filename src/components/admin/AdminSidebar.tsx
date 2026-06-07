@@ -24,6 +24,7 @@ const NAV_SECTIONS = [
     label: "Growth",
     items: [
       { href: "/admin/marketing", icon: "📣", label: "Marketing" },
+      { href: "/admin/social",    icon: "📤", label: "Social Sharing" },
       { href: "/admin/seo",       icon: "🔍", label: "SEO" },
     ],
   },
