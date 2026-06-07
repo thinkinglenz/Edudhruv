@@ -163,16 +163,36 @@ export default function ShareButton({ post, siteUrl }: Props) {
 
   const activePlatform = PLATFORMS.find(p => p.id === platform)!;
 
+  function quickShare(p: PlatformId) {
+    selectPlatform(p);
+    setOpen(true);
+    setImgState("idle");
+    setImgError("");
+  }
+
   return (
     <>
-      <button
-        onClick={openModal}
-        title="Share to social media"
-        className="text-xs hover:underline"
-        style={{ color: "#10B981" }}
-      >
-        Share
-      </button>
+      {/* Inline platform icons — one click opens modal pre-selected to that platform */}
+      <div className="inline-flex items-center gap-1 align-middle">
+        {PLATFORMS.filter(p => p.id !== "email").map(p => (
+          <button
+            key={p.id}
+            onClick={() => quickShare(p.id)}
+            title={`Share to ${p.label}`}
+            className="w-6 h-6 rounded flex items-center justify-center text-white text-[10px] font-bold hover:opacity-80 hover:scale-110 transition-all"
+            style={{ background: p.color }}
+          >
+            {p.icon}
+          </button>
+        ))}
+        <button
+          onClick={openModal}
+          title="More options — Email, Download Image, Edit caption"
+          className="text-xs px-1.5 text-gray-500 hover:text-white"
+        >
+          ⋯
+        </button>
+      </div>
 
       {open && (
         <div
