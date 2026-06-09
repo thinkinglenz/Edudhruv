@@ -117,94 +117,79 @@ export async function searchSite(q: string, limit = 30): Promise<SearchResponse>
     const tooShort = query.length < 3;
 
     // ─── POSTS ───────────────────────────────────────────────────────
+    // Try full-text first (when migration applied), fall back to ILIKE.
     const postsLimit = 12;
-    if (tooShort) {
-      // ILIKE for very short queries
-      const { data } = await sb
-        .from("posts")
-        .select("id,title,slug,category_slug,excerpt,featured_image_url")
-        .eq("status", "published")
-        .ilike("title", `%${query}%`)
-        .limit(postsLimit);
-      grouped.posts = (data || []).map((p: any) => ({
-        type: "post" as const,
-        title: p.title,
-        subtitle: p.category_slug.replace(/-/g, " "),
-        url: `/${p.category_slug}/${p.slug}`,
-        excerpt: p.excerpt,
-        image: p.featured_image_url,
-      }));
-    } else {
-      // Full-text search with ranking
-      // Use RPC for ranked query (simpler than chained Supabase syntax)
-      const { data, error } = await sb.rpc("search_posts", {
-        q: query,
-        result_limit: postsLimit,
-      });
-      if (error) {
-        // Fallback to textSearch if RPC doesn't exist yet
-        const { data: ftData } = await sb
+    let postsData: any[] | null = null;
+
+    if (!tooShort) {
+      try {
+        const { data, error } = await sb
           .from("posts")
           .select("id,title,slug,category_slug,excerpt,featured_image_url")
           .eq("status", "published")
           .textSearch("search_tsv", query, { type: "websearch", config: "english" })
           .limit(postsLimit);
-        grouped.posts = (ftData || []).map((p: any) => ({
-          type: "post" as const,
-          title: p.title,
-          subtitle: p.category_slug.replace(/-/g, " "),
-          url: `/${p.category_slug}/${p.slug}`,
-          excerpt: p.excerpt,
-          image: p.featured_image_url,
-        }));
-      } else {
-        grouped.posts = (data || []).map((p: any) => ({
-          type: "post" as const,
-          title: p.title,
-          subtitle: p.category_slug.replace(/-/g, " "),
-          url: `/${p.category_slug}/${p.slug}`,
-          excerpt: p.excerpt,
-          image: p.featured_image_url,
-          rank: p.rank,
-        }));
-      }
+        if (!error && data) postsData = data;
+      } catch { /* tsv column missing — fall through */ }
     }
+
+    if (!postsData) {
+      // ILIKE fallback on title OR excerpt OR tags (works without tsv column)
+      const safeQuery = query.replace(/%/g, "").replace(/_/g, "");
+      const { data } = await sb
+        .from("posts")
+        .select("id,title,slug,category_slug,excerpt,featured_image_url")
+        .eq("status", "published")
+        .or(`title.ilike.%${safeQuery}%,excerpt.ilike.%${safeQuery}%`)
+        .limit(postsLimit);
+      postsData = data || [];
+    }
+
+    grouped.posts = postsData.map((p: any) => ({
+      type: "post" as const,
+      title: p.title,
+      subtitle: p.category_slug.replace(/-/g, " "),
+      url: `/${p.category_slug}/${p.slug}`,
+      excerpt: p.excerpt,
+      image: p.featured_image_url,
+    }));
 
     // ─── SCHOLARSHIPS ────────────────────────────────────────────────
     const schLimit = 5;
-    if (tooShort) {
-      const { data } = await sb
-        .from("scholarships")
-        .select("id,scholarship_name,university_name,country,post_slug,featured_image_url,amount_inr")
-        .eq("status", "active")
-        .or(`scholarship_name.ilike.%${query}%,university_name.ilike.%${query}%`)
-        .limit(schLimit);
-      grouped.scholarships = (data || []).map((s: any) => ({
-        type: "scholarship" as const,
-        title: s.scholarship_name,
-        subtitle: `${s.university_name}, ${s.country}`,
-        url: s.post_slug ? `/scholarship/${s.post_slug}` : "/scholarships",
-        excerpt: s.amount_inr ? `Amount: ${s.amount_inr}` : undefined,
-        image: s.featured_image_url,
-        badge: "100% Funded",
-      }));
-    } else {
-      const { data } = await sb
-        .from("scholarships")
-        .select("id,scholarship_name,university_name,country,post_slug,featured_image_url,amount_inr")
-        .eq("status", "active")
-        .textSearch("search_tsv", query, { type: "websearch", config: "english" })
-        .limit(schLimit);
-      grouped.scholarships = (data || []).map((s: any) => ({
-        type: "scholarship" as const,
-        title: s.scholarship_name,
-        subtitle: `${s.university_name}, ${s.country}`,
-        url: s.post_slug ? `/scholarship/${s.post_slug}` : "/scholarships",
-        excerpt: s.amount_inr ? `Amount: ${s.amount_inr}` : undefined,
-        image: s.featured_image_url,
-        badge: "100% Funded",
-      }));
+    let schData: any[] | null = null;
+
+    if (!tooShort) {
+      try {
+        const { data, error } = await sb
+          .from("scholarships")
+          .select("id,scholarship_name,university_name,country,post_slug,featured_image_url,amount_inr")
+          .eq("status", "active")
+          .textSearch("search_tsv", query, { type: "websearch", config: "english" })
+          .limit(schLimit);
+        if (!error && data) schData = data;
+      } catch { /* tsv column missing */ }
     }
+
+    if (!schData) {
+      const safeQuery = query.replace(/%/g, "").replace(/_/g, "");
+      const { data } = await sb
+        .from("scholarships")
+        .select("id,scholarship_name,university_name,country,post_slug,featured_image_url,amount_inr")
+        .eq("status", "active")
+        .or(`scholarship_name.ilike.%${safeQuery}%,university_name.ilike.%${safeQuery}%,country.ilike.%${safeQuery}%`)
+        .limit(schLimit);
+      schData = data || [];
+    }
+
+    grouped.scholarships = schData.map((s: any) => ({
+      type: "scholarship" as const,
+      title: s.scholarship_name,
+      subtitle: `${s.university_name}, ${s.country}`,
+      url: s.post_slug ? `/scholarship/${s.post_slug}` : "/scholarships",
+      excerpt: s.amount_inr ? `Amount: ${s.amount_inr}` : undefined,
+      image: s.featured_image_url,
+      badge: "100% Funded",
+    }));
 
     // ─── UNIVERSITIES ────────────────────────────────────────────────
     if (query.length >= 3) {
