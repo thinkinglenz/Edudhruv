@@ -1,14 +1,10 @@
 name: Evergreen Blog Agent
 
 on:
-  # ⏸ PAUSED DURING ADSENSE REVIEW
-  # AdSense flagged "low value content" — too much AI-generated content.
-  # Cron schedule disabled until AdSense approval.
-  # Manual runs still work via "Run workflow" button in GitHub Actions UI.
-  # Re-enable by uncommenting the schedule block below:
-  #
-  # schedule:
-  #   - cron: "0 */12 * * *"
+  # Once per day at 04:00 UTC (09:30 IST — mid-morning India).
+  # Scholarship agent runs at 00:30 UTC, so this is 3.5h after — spread out.
+  schedule:
+    - cron: "0 4 * * *"
 
   # Allow manual trigger
   workflow_dispatch:
