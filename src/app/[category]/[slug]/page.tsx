@@ -16,8 +16,11 @@ import ReadingProgress      from "@/components/social/ReadingProgress";
 import FloatingShareBar     from "@/components/social/FloatingShareBar";
 import AuthorByline         from "@/components/blog/AuthorByline";
 import TLDR                 from "@/components/blog/TLDR";
+import KeyFacts             from "@/components/blog/KeyFacts";
+import AffiliateDisclosure  from "@/components/blog/AffiliateDisclosure";
 import { getAuthorForPost } from "@/lib/authors";
 import { getPostStats }     from "@/lib/social";
+import { getScholarshipByPostSlug } from "@/lib/scholarships";
 import {
   breadcrumbSchema,
   howToFromContent,
@@ -82,6 +85,11 @@ export default async function PostPage({
   const stats   = await getPostStats(post.slug);
   const fullUrl = `https://www.edudhruv.com/${post.category_slug}/${post.slug}`;
 
+  // Scholarship posts: pull the structured row so we can show Key Facts
+  const scholarship = post.category_slug === "scholarship"
+    ? await getScholarshipByPostSlug(post.slug)
+    : null;
+
   // Pick a deterministic author for this post (E-E-A-T SEO)
   const author = getAuthorForPost(post.slug, post.category_slug);
 
@@ -141,12 +149,19 @@ export default async function PostPage({
           {/* TL;DR — visible summary AI agents extract verbatim */}
           <TLDR excerpt={post.excerpt} />
 
+          {/* Key Facts box for scholarship posts (AI-extracted fact list) */}
+          {scholarship && <KeyFacts scholarship={scholarship} />}
+
+          {/* Affiliate disclosure — required by FTC + Google AdSense */}
+          <AffiliateDisclosure />
+
           {/* Author + date + rating — combined byline */}
           <div className="mb-5 pb-5 border-b border-gray-100">
             <AuthorByline
               postSlug={post.slug}
               categorySlug={post.category_slug}
               publishedAt={post.created_at}
+              updatedAt={post.updated_at}
               readingTime={post.reading_time}
             />
             {stats.avg_rating > 0 && (

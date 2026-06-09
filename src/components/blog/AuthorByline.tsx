@@ -5,6 +5,8 @@ interface Props {
   postSlug:     string;
   categorySlug: string;
   publishedAt:  string;
+  /** Optional — if more than 1 day after publish, shown as "Updated" */
+  updatedAt?:   string | null;
   readingTime?: number | null;
   /** "compact" = single line · "card" = full author card */
   variant?: "compact" | "card";
@@ -16,9 +18,21 @@ function formatDate(iso: string) {
   });
 }
 
-export default function AuthorByline({ postSlug, categorySlug, publishedAt, readingTime, variant = "compact" }: Props) {
+/** Returns "Updated 9 Jun 2026" if updatedAt is meaningfully later than publishedAt. */
+function freshnessLabel(publishedAt: string, updatedAt?: string | null): string | null {
+  if (!updatedAt) return null;
+  const pub = new Date(publishedAt).getTime();
+  const upd = new Date(updatedAt).getTime();
+  if (isNaN(pub) || isNaN(upd)) return null;
+  // Only show "Updated" if revision is at least 1 day after publish
+  if (upd - pub < 86_400_000) return null;
+  return `Updated ${formatDate(updatedAt)}`;
+}
+
+export default function AuthorByline({ postSlug, categorySlug, publishedAt, updatedAt, readingTime, variant = "compact" }: Props) {
   const author = getAuthorForPost(postSlug, categorySlug);
   const initials = getInitials(author.name);
+  const updatedLabel = freshnessLabel(publishedAt, updatedAt);
 
   if (variant === "card") {
     return (
@@ -62,8 +76,14 @@ export default function AuthorByline({ postSlug, categorySlug, publishedAt, read
           <p className="text-[11px] text-gray-500 uppercase tracking-wider">{author.role}</p>
         </div>
       </Link>
-      <div className="flex items-center gap-3 text-xs text-gray-400 ml-auto">
-        <span>{formatDate(publishedAt)}</span>
+      <div className="flex items-center gap-3 text-xs text-gray-400 ml-auto flex-wrap justify-end">
+        {updatedLabel ? (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-green-700 font-semibold border border-green-200">
+            ✓ {updatedLabel}
+          </span>
+        ) : (
+          <span>{formatDate(publishedAt)}</span>
+        )}
         {readingTime && <span>· {readingTime} min read</span>}
       </div>
     </div>

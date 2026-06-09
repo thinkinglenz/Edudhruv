@@ -101,19 +101,42 @@ export default async function AuthorPage({ params }: { params: { slug: string } 
         )}
       </div>
 
-      {/* Person schema for E-E-A-T */}
+      {/* Person + ProfilePage schema for E-E-A-T (Google's expertise signal) */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             "@context":   "https://schema.org",
-            "@type":      "Person",
-            name:         author.name,
-            jobTitle:     author.role,
-            description:  author.bio,
-            url:          `https://www.edudhruv.com/author/${author.slug}`,
-            worksFor:     { "@type": "Organization", name: "EduDhruv" },
-            knowsAbout:   author.specialties,
+            "@type":      "ProfilePage",
+            mainEntity: {
+              "@type":      "Person",
+              name:         author.name,
+              jobTitle:     author.role,
+              description:  author.bio,
+              url:          `https://www.edudhruv.com/author/${author.slug}`,
+              image:        `https://www.edudhruv.com/author/${author.slug}.jpg`,
+              worksFor:     {
+                "@type":   "EducationalOrganization",
+                name:      "EduDhruv",
+                url:       "https://www.edudhruv.com",
+              },
+              knowsAbout:   author.specialties.map(s =>
+                s.split("-").map(w => w[0].toUpperCase() + w.slice(1)).join(" ")
+              ),
+              knowsLanguage: ["en", "hi"],
+              nationality:   { "@type": "Country", name: "India" },
+              alumniOf:      author.bio.includes("LSE")        ? { "@type": "EducationalOrganization", name: "London School of Economics" } :
+                             author.bio.includes("Chevening")  ? { "@type": "EducationalOrganization", name: "Chevening Scholarship Alumni" } :
+                             author.bio.includes("Commonwealth")? { "@type": "EducationalOrganization", name: "Commonwealth Scholarship Alumni" } :
+                             undefined,
+              hasOccupation: {
+                "@type":           "Occupation",
+                name:              author.role,
+                occupationLocation:{ "@type": "Country", name: "India" },
+                skills:            author.specialties.join(", "),
+              },
+            },
+            dateModified: new Date().toISOString().slice(0, 10),
           }),
         }}
       />

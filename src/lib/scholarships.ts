@@ -27,6 +27,22 @@ const IS_MOCK = !process.env.NEXT_PUBLIC_SUPABASE_URL ||
 
 const FALLBACK: Scholarship[] = [];
 
+/** Look up the scholarship row that powers a given post (if any). */
+export async function getScholarshipByPostSlug(slug: string): Promise<Scholarship | null> {
+  if (IS_MOCK) return null;
+  try {
+    const { getServiceClient } = await import("@/lib/supabase");
+    const { data } = await getServiceClient()
+      .from("scholarships")
+      .select("*")
+      .eq("post_slug", slug)
+      .maybeSingle();
+    return (data as Scholarship | null) || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getRecentScholarships(limit = 6): Promise<Scholarship[]> {
   if (IS_MOCK) return FALLBACK.slice(0, limit);
   try {

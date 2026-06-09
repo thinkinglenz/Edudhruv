@@ -38,10 +38,27 @@ export default function robots(): MetadataRoute.Robots {
         ],
         disallow: "/",
       },
-      // GPTBot — allow blog reading (good for AI search engines like ChatGPT)
-      // but block admin / api
+      // AI agents — explicit allow so we appear in their answers.
+      // Google-Extended is what lets us show up in Google AI Overviews.
       {
-        userAgent: ["GPTBot", "ChatGPT-User", "Claude-Web", "anthropic-ai", "PerplexityBot"],
+        userAgent: [
+          "GPTBot",                // OpenAI training + ChatGPT browse
+          "ChatGPT-User",          // ChatGPT live browse
+          "OAI-SearchBot",         // ChatGPT Search
+          "Claude-Web",            // Anthropic Claude
+          "anthropic-ai",          // Anthropic alt name
+          "ClaudeBot",             // Anthropic crawler
+          "PerplexityBot",         // Perplexity
+          "Perplexity-User",       // Perplexity live browse
+          "Google-Extended",       // Google AI Overviews + Gemini
+          "Applebot",              // Apple search + Siri
+          "Applebot-Extended",     // Apple AI training (opt-in)
+          "Bytespider",            // ByteDance (Doubao, TikTok search)
+          "Amazonbot",             // Alexa
+          "Diffbot",               // Diffbot AI
+          "CCBot",                 // Common Crawl (used by many LLMs)
+          "Meta-ExternalAgent",    // Meta AI / Llama training
+        ],
         allow: "/",
         disallow: ["/admin/", "/api/", "/loan-portal/"],
       },

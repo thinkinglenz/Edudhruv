@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { pingIndexNow } from "@/lib/indexnow";
 
 /**
  * On-demand cache revalidation.
@@ -56,9 +57,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Submit to IndexNow (Bing/Yandex) so the new URL gets indexed in hours
+    // not days. Only ping for new content (when a slug is provided).
+    let indexnowSent = false;
+    if (slug && category) {
+      const postUrl = `https://www.edudhruv.com/${category}/${slug}`;
+      // Don't await — fire and forget so this never blocks the response
+      pingIndexNow([postUrl, `https://www.edudhruv.com/${category}`, "https://www.edudhruv.com/"])
+        .catch(() => {});
+      indexnowSent = true;
+    }
+
     return NextResponse.json({
       success: true,
       revalidated,
+      indexnowSent,
       timestamp: new Date().toISOString(),
     });
 
