@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import SearchTrigger from "@/components/search/SearchTrigger";
 
 const NAV = [
   { label: "Best Loans",         href: "/best-education-loans" },
@@ -51,18 +52,17 @@ export default function Header() {
           ))}
         </nav>
 
-        {/* CTAs — Advertise + Get Help */}
-        <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
-          <Link
-            href="/advertise"
-            className="hidden md:inline-flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-lg border-2 transition-colors hover:bg-orange-50 whitespace-nowrap"
-            style={{ borderColor: "#F5A71A", color: "#F5A71A" }}
-          >
-            📣 Advertise
-          </Link>
+        {/* Search + CTAs — Advertise + Get Help */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Desktop search — full pill */}
+          <SearchTrigger />
+          {/* Mobile / tablet — icon button */}
+          <div className="md:hidden">
+            <SearchTrigger compact />
+          </div>
           <Link
             href="/loan-portal"
-            className="inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-brand-dark transition-colors shadow-sm whitespace-nowrap"
+            className="hidden sm:inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-brand-dark transition-colors shadow-sm whitespace-nowrap"
           >
             Get Free Help →
           </Link>
