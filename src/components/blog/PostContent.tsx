@@ -1,5 +1,6 @@
 import LeadForm from "./LeadForm";
 import AmazonBox from "./AmazonBox";
+import NewsletterSignup from "./NewsletterSignup";
 import { applyInternalLinks } from "@/lib/internal-links";
 
 interface Props {
@@ -37,6 +38,7 @@ export default function PostContent({ content, slug, categorySlug }: Props) {
       <div dangerouslySetInnerHTML={{ __html: top }} />
       <LeadForm sourceSlug={slug} />
       <div dangerouslySetInnerHTML={{ __html: bottom }} />
+      <NewsletterSignup sourceSlug={slug} variant="inline" />
       <AmazonBox categorySlug={categorySlug} />
     </div>
   );

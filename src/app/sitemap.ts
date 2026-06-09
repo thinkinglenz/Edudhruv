@@ -1,13 +1,17 @@
 import { MetadataRoute } from "next";
-import { getAllPublishedSlugs } from "@/lib/supabase";
+import { getAllPublishedSlugs, getAllTagsWithCounts } from "@/lib/supabase";
 import { CATEGORIES } from "@/lib/categories";
+import { AUTHORS } from "@/lib/authors";
 
 // Use SITE_URL env var if set (e.g. https://edudhruv.vercel.app while DNS propagates),
 // otherwise default to the production domain.
 const BASE = (process.env.SITE_URL || "https://www.edudhruv.com").replace(/\/$/, "");
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const slugs = await getAllPublishedSlugs();
+  const [slugs, tags] = await Promise.all([
+    getAllPublishedSlugs(),
+    getAllTagsWithCounts(),
+  ]);
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: BASE, changeFrequency: "daily", priority: 1.0 },
@@ -34,5 +38,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticPages, ...categoryPages, ...postPages];
+  // Tag pages — long-tail SEO + AI context
+  const tagPages: MetadataRoute.Sitemap = tags.map(({ slug }) => ({
+    url: `${BASE}/tag/${slug}`,
+    changeFrequency: "weekly" as const,
+    priority: 0.5,
+  }));
+
+  // Author pages — E-E-A-T signal
+  const authorPages: MetadataRoute.Sitemap = AUTHORS.map(a => ({
+    url: `${BASE}/author/${a.slug}`,
+    changeFrequency: "monthly" as const,
+    priority: 0.4,
+  }));
+
+  return [...staticPages, ...categoryPages, ...postPages, ...tagPages, ...authorPages];
 }

@@ -114,7 +114,7 @@ export default async function AuthorPage({ params }: { params: { slug: string } 
               jobTitle:     author.role,
               description:  author.bio,
               url:          `https://www.edudhruv.com/author/${author.slug}`,
-              image:        `https://www.edudhruv.com/author/${author.slug}.jpg`,
+              image:        `https://www.edudhruv.com/author/${author.slug}/avatar.svg`,
               worksFor:     {
                 "@type":   "EducationalOrganization",
                 name:      "EduDhruv",

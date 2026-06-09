@@ -43,6 +43,54 @@ export async function getScholarshipByPostSlug(slug: string): Promise<Scholarshi
   }
 }
 
+/**
+ * Get scholarships to compare against the current one — used to render the
+ * Comparison table on each scholarship post. Returns 3 active scholarships
+ * preferring same country, falling back to other countries.
+ */
+export async function getComparisonScholarships(
+  excludeSlug: string,
+  preferCountry?: string,
+  limit = 3,
+): Promise<Scholarship[]> {
+  if (IS_MOCK) return FALLBACK;
+  try {
+    const { getServiceClient } = await import("@/lib/supabase");
+    const sb = getServiceClient();
+
+    // 1. Same country first
+    let rows: Scholarship[] = [];
+    if (preferCountry) {
+      const { data } = await sb.from("scholarships")
+        .select("*")
+        .eq("status", "active")
+        .eq("country", preferCountry)
+        .neq("post_slug", excludeSlug)
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      rows = (data as Scholarship[]) || [];
+    }
+
+    // 2. Top up with other countries if needed
+    if (rows.length < limit) {
+      const { data } = await sb.from("scholarships")
+        .select("*")
+        .eq("status", "active")
+        .neq("post_slug", excludeSlug)
+        .order("created_at", { ascending: false })
+        .limit(limit - rows.length + 5);
+      const extras = ((data as Scholarship[]) || [])
+        .filter(s => !rows.find(r => r.id === s.id))
+        .slice(0, limit - rows.length);
+      rows = [...rows, ...extras];
+    }
+
+    return rows;
+  } catch {
+    return FALLBACK;
+  }
+}
+
 export async function getRecentScholarships(limit = 6): Promise<Scholarship[]> {
   if (IS_MOCK) return FALLBACK.slice(0, limit);
   try {

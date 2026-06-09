@@ -103,9 +103,10 @@ const nextConfig = {
 
       // ─── WordPress generic URL patterns ──────────────────────────
       { source: "/category/:slug",  destination: "/:slug",      permanent: true },
-      { source: "/tag/:slug",       destination: "/latest",     permanent: true },
-      // NOTE: /author/:slug NOT redirected anymore — we have real author
-      // pages with ProfilePage schema for E-E-A-T (src/app/author/[slug]/page.tsx)
+      // NOTE: /tag/:slug NOT redirected — we have real tag pages now
+      // (src/app/tag/[slug]/page.tsx) for long-tail keyword SEO
+      // NOTE: /author/:slug NOT redirected — we have real author pages
+      // with ProfilePage schema for E-E-A-T (src/app/author/[slug]/page.tsx)
       { source: "/page/:num",       destination: "/",           permanent: true },
 
       // ─── WordPress admin → Vercel admin ──────────────────────────

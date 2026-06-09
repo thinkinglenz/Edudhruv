@@ -18,9 +18,10 @@ import AuthorByline         from "@/components/blog/AuthorByline";
 import TLDR                 from "@/components/blog/TLDR";
 import KeyFacts             from "@/components/blog/KeyFacts";
 import AffiliateDisclosure  from "@/components/blog/AffiliateDisclosure";
+import ComparisonTable      from "@/components/blog/ComparisonTable";
 import { getAuthorForPost } from "@/lib/authors";
 import { getPostStats }     from "@/lib/social";
-import { getScholarshipByPostSlug } from "@/lib/scholarships";
+import { getScholarshipByPostSlug, getComparisonScholarships } from "@/lib/scholarships";
 import {
   breadcrumbSchema,
   howToFromContent,
@@ -85,10 +86,13 @@ export default async function PostPage({
   const stats   = await getPostStats(post.slug);
   const fullUrl = `https://www.edudhruv.com/${post.category_slug}/${post.slug}`;
 
-  // Scholarship posts: pull the structured row so we can show Key Facts
+  // Scholarship posts: pull the structured row so we can show Key Facts + comparison
   const scholarship = post.category_slug === "scholarship"
     ? await getScholarshipByPostSlug(post.slug)
     : null;
+  const comparison = scholarship
+    ? await getComparisonScholarships(post.slug, scholarship.country, 3)
+    : [];
 
   // Pick a deterministic author for this post (E-E-A-T SEO)
   const author = getAuthorForPost(post.slug, post.category_slug);
@@ -212,13 +216,22 @@ export default async function PostPage({
             categorySlug={post.category_slug}
           />
 
-          {/* Tags */}
+          {/* Comparison table for scholarship posts (AI-extracted, drives dwell time) */}
+          {scholarship && comparison.length > 0 && (
+            <ComparisonTable current={scholarship} others={comparison} />
+          )}
+
+          {/* Tags — now clickable, links to /tag/[slug] for long-tail SEO */}
           {post.tags && post.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-8 pt-6 border-t border-gray-100">
               {post.tags.map((tag) => (
-                <span key={tag} className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
-                  {tag}
-                </span>
+                <Link
+                  key={tag}
+                  href={`/tag/${tag.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}`}
+                  className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-brand-light hover:text-brand transition-colors"
+                >
+                  #{tag}
+                </Link>
               ))}
             </div>
           )}

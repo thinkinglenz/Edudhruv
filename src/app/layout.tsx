@@ -80,8 +80,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
+        {/* Performance: preconnect to CDN origins we actually use on first paint */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://pagead2.googlesyndication.com" />
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <link rel="preconnect" href="https://upload.wikimedia.org" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
+        {/* DNS prefetch — secondary origins */}
+        <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+        <link rel="dns-prefetch" href="https://api.indexnow.org" />
 
         {/* AdSense account verification — required for site approval */}
         <meta name="google-adsense-account" content={ADSENSE_ID} />
@@ -100,7 +107,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* SiteShell shows Header+Footer on public routes, raw on /admin */}
         <SiteShell>{children}</SiteShell>
 
-        <Script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_ID}`} crossOrigin="anonymous" strategy="afterInteractive" />
+        {/* AdSense — lazyOnload so it doesn't block LCP (Core Web Vitals) */}
+        <Script
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_ID}`}
+          crossOrigin="anonymous"
+          strategy="lazyOnload"
+        />
         <GoogleAnalytics />
       </body>
     </html>
