@@ -2,26 +2,35 @@
 -- Site-wide full-text search using Postgres tsvector
 -- ═══════════════════════════════════════════════════════════════════
 --
--- Auto-generated tsvector columns with weighted fields:
---   A = title          (highest priority)
---   B = excerpt / tags
---   C = category / focus_keyword
---   D = content body
+-- Postgres requires generated columns to use IMMUTABLE functions.
+-- `to_tsvector(text, text)` is STABLE (not IMMUTABLE) because the
+-- text->regconfig cast depends on current_setting.
 --
--- GIN indexes for sub-50ms searches even on 1M+ rows.
--- Generated columns mean no triggers needed — Postgres recomputes
--- the tsvector automatically whenever a row is inserted/updated.
+-- Workaround: create an IMMUTABLE wrapper that hard-codes 'english'
+-- as a regconfig literal. We can safely mark it IMMUTABLE because
+-- 'english' is a fixed dictionary built into Postgres.
+-- ═══════════════════════════════════════════════════════════════════
+
+-- ─── IMMUTABLE wrapper ──────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION edudhruv_search_tsv(content text)
+RETURNS tsvector
+LANGUAGE sql
+IMMUTABLE
+PARALLEL SAFE
+AS $$
+  SELECT to_tsvector('english'::regconfig, coalesce(content, ''))
+$$;
 
 -- ─── POSTS ──────────────────────────────────────────────────────────
 ALTER TABLE posts
   ADD COLUMN IF NOT EXISTS search_tsv tsvector
   GENERATED ALWAYS AS (
-    setweight(to_tsvector('english', coalesce(title,           '')), 'A') ||
-    setweight(to_tsvector('english', coalesce(excerpt,         '')), 'B') ||
-    setweight(to_tsvector('english', coalesce(array_to_string(tags, ' '), '')), 'B') ||
-    setweight(to_tsvector('english', coalesce(focus_keyword,   '')), 'C') ||
-    setweight(to_tsvector('english', coalesce(category_slug,   '')), 'C') ||
-    setweight(to_tsvector('english', coalesce(content,         '')), 'D')
+    setweight(edudhruv_search_tsv(title),                             'A') ||
+    setweight(edudhruv_search_tsv(excerpt),                           'B') ||
+    setweight(edudhruv_search_tsv(array_to_string(tags, ' ')),        'B') ||
+    setweight(edudhruv_search_tsv(focus_keyword),                     'C') ||
+    setweight(edudhruv_search_tsv(category_slug),                     'C') ||
+    setweight(edudhruv_search_tsv(content),                           'D')
   ) STORED;
 
 CREATE INDEX IF NOT EXISTS idx_posts_search_tsv ON posts USING GIN(search_tsv);
@@ -30,12 +39,12 @@ CREATE INDEX IF NOT EXISTS idx_posts_search_tsv ON posts USING GIN(search_tsv);
 ALTER TABLE scholarships
   ADD COLUMN IF NOT EXISTS search_tsv tsvector
   GENERATED ALWAYS AS (
-    setweight(to_tsvector('english', coalesce(scholarship_name,    '')), 'A') ||
-    setweight(to_tsvector('english', coalesce(university_name,     '')), 'A') ||
-    setweight(to_tsvector('english', coalesce(country,             '')), 'B') ||
-    setweight(to_tsvector('english', coalesce(eligibility_summary, '')), 'C') ||
-    setweight(to_tsvector('english', coalesce(intake,              '')), 'C') ||
-    setweight(to_tsvector('english', coalesce(array_to_string(courses_covered, ' '), '')), 'C')
+    setweight(edudhruv_search_tsv(scholarship_name),                          'A') ||
+    setweight(edudhruv_search_tsv(university_name),                           'A') ||
+    setweight(edudhruv_search_tsv(country),                                   'B') ||
+    setweight(edudhruv_search_tsv(eligibility_summary),                       'C') ||
+    setweight(edudhruv_search_tsv(intake),                                    'C') ||
+    setweight(edudhruv_search_tsv(array_to_string(courses_covered, ' ')),     'C')
   ) STORED;
 
 CREATE INDEX IF NOT EXISTS idx_scholarships_search_tsv ON scholarships USING GIN(search_tsv);
@@ -44,14 +53,13 @@ CREATE INDEX IF NOT EXISTS idx_scholarships_search_tsv ON scholarships USING GIN
 ALTER TABLE universities
   ADD COLUMN IF NOT EXISTS search_tsv tsvector
   GENERATED ALWAYS AS (
-    setweight(to_tsvector('english', coalesce(name,             '')), 'A') ||
-    setweight(to_tsvector('english', coalesce(country,          '')), 'B') ||
-    setweight(to_tsvector('english', coalesce(array_to_string(popular_courses, ' '), '')), 'C')
+    setweight(edudhruv_search_tsv(name),                                       'A') ||
+    setweight(edudhruv_search_tsv(country),                                    'B') ||
+    setweight(edudhruv_search_tsv(array_to_string(popular_courses, ' ')),      'C')
   ) STORED;
 
 CREATE INDEX IF NOT EXISTS idx_universities_search_tsv ON universities USING GIN(search_tsv);
 
--- ─── pg_trgm — fuzzy matching for typos / partial words ────────────
--- Lets us match "stanfrd" → "Stanford" etc.
+-- ─── pg_trgm for fuzzy matching (typos / partial words) ────────────
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE INDEX IF NOT EXISTS idx_posts_title_trgm ON posts USING gin (title gin_trgm_ops);
