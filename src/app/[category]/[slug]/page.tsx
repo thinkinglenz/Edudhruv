@@ -15,8 +15,15 @@ import CommentsSection      from "@/components/social/CommentsSection";
 import ReadingProgress      from "@/components/social/ReadingProgress";
 import FloatingShareBar     from "@/components/social/FloatingShareBar";
 import AuthorByline         from "@/components/blog/AuthorByline";
+import TLDR                 from "@/components/blog/TLDR";
 import { getAuthorForPost } from "@/lib/authors";
 import { getPostStats }     from "@/lib/social";
+import {
+  breadcrumbSchema,
+  howToFromContent,
+  faqFromContent,
+  articleSchema as buildArticleSchema,
+} from "@/lib/seo-schemas";
 
 export const revalidate = 3600;
 
@@ -32,16 +39,25 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const post = await getPostBySlug(params.slug);
   if (!post) return {};
+  const url = `https://www.edudhruv.com/${post.category_slug}/${post.slug}`;
   return {
     title: post.meta_title || post.title,
     description: post.meta_description || post.excerpt,
-    alternates: { canonical: `https://www.edudhruv.com/${post.category_slug}/${post.slug}` },
+    alternates: { canonical: url },
     openGraph: {
       title: post.meta_title || post.title,
       description: post.meta_description || post.excerpt || "",
       images: post.featured_image_url ? [post.featured_image_url] : [],
       type: "article",
       publishedTime: post.created_at,
+      modifiedTime: post.updated_at,
+      url,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.meta_title || post.title,
+      description: post.meta_description || post.excerpt || "",
+      images: post.featured_image_url ? [post.featured_image_url] : [],
     },
     other: post.focus_keyword ? { "article:tag": post.focus_keyword } : {},
   };
@@ -53,27 +69,6 @@ function formatDate(iso: string) {
   });
 }
 
-function buildFaqSchema(content: string) {
-  const faqs: { q: string; a: string }[] = [];
-  const h3Regex = /<h3[^>]*>([\s\S]*?)<\/h3>\s*<p>([\s\S]*?)<\/p>/gi;
-  let match;
-  while ((match = h3Regex.exec(content)) !== null && faqs.length < 5) {
-    const q = match[1].replace(/<[^>]+>/g, "").trim();
-    const a = match[2].replace(/<[^>]+>/g, "").trim();
-    if (q && a) faqs.push({ q, a });
-  }
-  if (faqs.length === 0) return null;
-  return {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faqs.map(({ q, a }) => ({
-      "@type": "Question",
-      name: q,
-      acceptedAnswer: { "@type": "Answer", text: a },
-    })),
-  };
-}
-
 export default async function PostPage({
   params,
 }: {
@@ -82,37 +77,35 @@ export default async function PostPage({
   const post = await getPostBySlug(params.slug);
   if (!post || post.category_slug !== params.category) notFound();
 
-  const cat       = getCategoryBySlug(post.category_slug);
-  const related   = await getRelatedPosts(post.category_slug, post.slug, 3);
-  const stats     = await getPostStats(post.slug);
-  const faqSchema = buildFaqSchema(post.content);
-  const fullUrl   = `https://www.edudhruv.com/${post.category_slug}/${post.slug}`;
+  const cat     = getCategoryBySlug(post.category_slug);
+  const related = await getRelatedPosts(post.category_slug, post.slug, 3);
+  const stats   = await getPostStats(post.slug);
+  const fullUrl = `https://www.edudhruv.com/${post.category_slug}/${post.slug}`;
 
   // Pick a deterministic author for this post (E-E-A-T SEO)
   const author = getAuthorForPost(post.slug, post.category_slug);
 
-  const articleSchema = {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    headline:      post.title,
-    description:   post.meta_description || post.excerpt,
+  // ─── Schemas (built server-side, rendered in HTML) ────────────────────
+  const breadcrumb = breadcrumbSchema([
+    { name: "Home",      url: "/" },
+    { name: cat?.name || post.category_slug, url: `/${post.category_slug}` },
+    { name: post.title,  url: `/${post.category_slug}/${post.slug}` },
+  ]);
+
+  const article = buildArticleSchema({
+    url:           fullUrl,
+    title:         post.title,
+    description:   post.meta_description || post.excerpt || "",
     image:         post.featured_image_url,
     datePublished: post.created_at,
     dateModified:  post.updated_at,
-    author: {
-      "@type":      "Person",
-      name:         author.name,
-      jobTitle:     author.role,
-      description:  author.bio,
-      url:          `https://www.edudhruv.com/author/${author.slug}`,
-    },
-    publisher: {
-      "@type": "Organization",
-      name: "EduDhruv",
-      logo: { "@type": "ImageObject", url: "https://www.edudhruv.com/logo.jpg" },
-    },
-    mainEntityOfPage: `https://www.edudhruv.com/${post.category_slug}/${post.slug}`,
-  };
+    author:        { name: author.name, slug: author.slug, role: author.role, bio: author.bio },
+    keywords:      post.tags || [],
+    category:      cat?.name,
+  });
+
+  const faq   = faqFromContent(post.content);
+  const howto = howToFromContent(post.title, post.content, fullUrl);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
@@ -141,9 +134,12 @@ export default async function PostPage({
             </Link>
           )}
 
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-4">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-4" data-speakable="true">
             {post.title}
           </h1>
+
+          {/* TL;DR — visible summary AI agents extract verbatim */}
+          <TLDR excerpt={post.excerpt} />
 
           {/* Author + date + rating — combined byline */}
           <div className="mb-5 pb-5 border-b border-gray-100">
@@ -298,10 +294,14 @@ export default async function PostPage({
         </aside>
       </div>
 
-      {/* Structured data */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
-      {faqSchema && (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      {/* ── Structured data (server-rendered for crawlers + AI agents) ── */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(article) }} />
+      {faq && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faq) }} />
+      )}
+      {howto && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(howto) }} />
       )}
     </div>
   );

@@ -5,6 +5,7 @@ import { getCategoryBySlug, CATEGORY_SLUGS } from "@/lib/categories";
 import { getPostsByCategory } from "@/lib/supabase";
 import PostCard from "@/components/blog/PostCard";
 import RotatingBanner, { ListMyAIBanner, ThinkingLenzBanner } from "@/components/ads/RotatingBanner";
+import { breadcrumbSchema, collectionPageSchema } from "@/lib/seo-schemas";
 
 export const revalidate = 3600;
 
@@ -37,10 +38,26 @@ export default async function CategoryPage({
   const { posts, total } = await getPostsByCategory(cat.slug, page, 12);
   const totalPages = Math.ceil(total / 12);
 
+  // Schemas for crawlers + AI agents
+  const breadcrumb = breadcrumbSchema([
+    { name: "Home", url: "/" },
+    { name: cat.name, url: `/${cat.slug}` },
+  ]);
+  const collection = collectionPageSchema(
+    `${cat.name} — EduDhruv`,
+    cat.description,
+    `https://www.edudhruv.com/${cat.slug}`,
+    total,
+  );
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+      {/* Schemas */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collection) }} />
+
       {/* Breadcrumb */}
-      <nav className="text-sm text-gray-400 mb-6">
+      <nav className="text-sm text-gray-400 mb-6" aria-label="Breadcrumb">
         <Link href="/" className="hover:text-brand">Home</Link>
         <span className="mx-2">›</span>
         <span className="text-gray-700">{cat.name}</span>
