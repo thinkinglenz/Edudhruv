@@ -2,6 +2,7 @@ import { MetadataRoute } from "next";
 import { getAllPublishedSlugs, getAllTagsWithCounts } from "@/lib/supabase";
 import { CATEGORIES } from "@/lib/categories";
 import { AUTHORS } from "@/lib/authors";
+import { COUNTRIES } from "@/lib/countries";
 
 // Use SITE_URL env var if set (e.g. https://edudhruv.vercel.app while DNS propagates),
 // otherwise default to the production domain.
@@ -53,5 +54,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.4,
   }));
 
-  return [...staticPages, ...categoryPages, ...postPages, ...tagPages, ...authorPages];
+  // Country guides — high-priority programmatic SEO pages
+  const countryPages: MetadataRoute.Sitemap = COUNTRIES.map(c => ({
+    url: `${BASE}/study-in/${c.slug}`,
+    changeFrequency: "weekly" as const,
+    priority: 0.9,  // Very high — buyer-intent
+  }));
+
+  return [...staticPages, ...categoryPages, ...postPages, ...tagPages, ...authorPages, ...countryPages];
 }

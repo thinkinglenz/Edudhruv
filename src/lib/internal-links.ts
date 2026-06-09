@@ -52,6 +52,14 @@ function buildRules(): LinkRule[] {
     { pattern: /\b(best education loans?|compare education loans?|best student loans?)\b/i, href: "/best-education-loans", title: "Best Education Loans Comparison" },
     { pattern: /\b(free guidance|free counselling|talk to (?:our )?counsel?lor)\b/i, href: "/loan-portal", title: "Free Counselling" },
     { pattern: /\b(Priya(?: Menon)?)\b/,                                  href: "/loan-portal",         title: "Chat with Priya" },
+
+    // Country guides — auto-link first mention of "study in {country}"
+    { pattern: /\b(study in (?:the )?USA?|study in America)\b/i,          href: "/study-in/usa",        title: "Study in USA from India — Complete Guide" },
+    { pattern: /\b(study in (?:the )?UK|study in (?:the )?United Kingdom|study in Britain)\b/i, href: "/study-in/uk", title: "Study in UK from India — Complete Guide" },
+    { pattern: /\b(study in Canada)\b/i,                                  href: "/study-in/canada",     title: "Study in Canada from India — Complete Guide" },
+    { pattern: /\b(study in Australia)\b/i,                               href: "/study-in/australia",  title: "Study in Australia from India — Complete Guide" },
+    { pattern: /\b(study in Germany)\b/i,                                 href: "/study-in/germany",    title: "Study in Germany from India — Complete Guide" },
+    { pattern: /\b(study in Singapore)\b/i,                               href: "/study-in/singapore",  title: "Study in Singapore from India — Complete Guide" },
   );
 
   return rules;
