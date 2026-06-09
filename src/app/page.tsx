@@ -157,6 +157,57 @@ export default async function HomePage() {
         </div>
       )}
 
+      {/* ── 🧮 Free Tools — drive engagement + bookmarks ───────────── */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+        <div className="flex items-end justify-between flex-wrap gap-3 mb-6">
+          <div>
+            <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-2"
+                  style={{ background: "#EBF7FD", color: "#3AAFE5" }}>
+              🧮 Free Tools
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold" style={{ color: "#333" }}>
+              Plan your study abroad in 60 seconds
+            </h2>
+            <p className="text-gray-500 text-sm mt-1">
+              Honest calculators built for Indian students — no signup, no data collected
+            </p>
+          </div>
+          <Link href="/tools" className="text-sm font-bold hover:underline whitespace-nowrap" style={{ color: "#3AAFE5" }}>
+            View all tools →
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Link href="/tools/education-loan-emi-calculator"
+                className="group block bg-white rounded-2xl border-2 border-gray-100 p-6 hover:shadow-lg hover:border-brand transition-all">
+            <div className="text-5xl mb-3">💰</div>
+            <h3 className="font-extrabold text-lg text-gray-900 mb-1 group-hover:text-brand">
+              Education Loan EMI Calculator
+            </h3>
+            <p className="text-sm text-gray-600 mb-3">
+              Calculate monthly EMI for any loan amount, rate, and tenure. Compare 5 lender rates side-by-side.
+            </p>
+            <span className="inline-flex items-center gap-1 text-sm font-bold" style={{ color: "#3AAFE5" }}>
+              Calculate EMI →
+            </span>
+          </Link>
+
+          <Link href="/tools/cost-of-studying-abroad-calculator"
+                className="group block bg-white rounded-2xl border-2 border-gray-100 p-6 hover:shadow-lg hover:border-brand transition-all">
+            <div className="text-5xl mb-3">🌍</div>
+            <h3 className="font-extrabold text-lg text-gray-900 mb-1 group-hover:text-brand">
+              Cost of Studying Abroad Calculator
+            </h3>
+            <p className="text-sm text-gray-600 mb-3">
+              Total cost in INR for 6 countries — tuition + living + visa + flights + EMI estimate.
+            </p>
+            <span className="inline-flex items-center gap-1 text-sm font-bold" style={{ color: "#F5A71A" }}>
+              Estimate cost →
+            </span>
+          </Link>
+        </div>
+      </section>
+
       {HOMEPAGE_CATEGORIES.map((slug, i) => {
         const cat = getCategoryBySlug(slug);
         const posts = categoryPosts[slug] || [];

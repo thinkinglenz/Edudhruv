@@ -5,12 +5,12 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 
 const NAV = [
-  { label: "Best Loans",         href: "/best-education-loans", badge: "NEW" },
+  { label: "Best Loans",         href: "/best-education-loans" },
   { label: "100% Scholarships",  href: "/scholarships" },
+  { label: "Free Tools",         href: "/tools", badge: "NEW" },
   { label: "Universities",       href: "/top-universities" },
   { label: "Students Abroad",    href: "/indian-students-abroad" },
   { label: "Accommodation",      href: "/student-accommodation" },
-  { label: "Travel",             href: "/travel-essentials" },
 ];
 
 export default function Header() {

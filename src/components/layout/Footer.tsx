@@ -23,12 +23,13 @@ export default function Footer() {
           <h3 className="text-white font-semibold mb-3 text-sm uppercase tracking-wider">Topics</h3>
           <ul className="space-y-2 text-sm">
             {[
-              ["Education Loan", "/education-loan"],
-              ["Scholarships", "/scholarship"],
-              ["Top Universities", "/top-universities"],
-              ["Indians Abroad", "/indian-students-abroad"],
-              ["Accommodation", "/student-accommodation"],
-              ["Travel Essentials", "/travel-essentials"],
+              ["Best Education Loans",   "/best-education-loans"],
+              ["100% Scholarships",       "/scholarships"],
+              ["Free Tools",              "/tools"],
+              ["EMI Calculator",          "/tools/education-loan-emi-calculator"],
+              ["Cost Calculator",         "/tools/cost-of-studying-abroad-calculator"],
+              ["Top Universities",        "/top-universities"],
+              ["Study Abroad Guides",     "/indian-students-abroad"],
             ].map(([label, href]) => (
               <li key={href}>
                 <Link href={href} className="hover:text-white transition-colors">{label}</Link>
