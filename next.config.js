@@ -104,7 +104,8 @@ const nextConfig = {
       // ─── WordPress generic URL patterns ──────────────────────────
       { source: "/category/:slug",  destination: "/:slug",      permanent: true },
       { source: "/tag/:slug",       destination: "/latest",     permanent: true },
-      { source: "/author/:slug",    destination: "/",           permanent: true },
+      // NOTE: /author/:slug NOT redirected anymore — we have real author
+      // pages with ProfilePage schema for E-E-A-T (src/app/author/[slug]/page.tsx)
       { source: "/page/:num",       destination: "/",           permanent: true },
 
       // ─── WordPress admin → Vercel admin ──────────────────────────
