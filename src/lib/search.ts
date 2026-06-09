@@ -145,7 +145,7 @@ export async function searchSite(q: string, limit = 30): Promise<SearchResponse>
       postsData = data || [];
     }
 
-    grouped.posts = postsData.map((p: any) => ({
+    grouped.posts = (postsData || []).map((p: any) => ({
       type: "post" as const,
       title: p.title,
       subtitle: p.category_slug.replace(/-/g, " "),
@@ -181,7 +181,7 @@ export async function searchSite(q: string, limit = 30): Promise<SearchResponse>
       schData = data || [];
     }
 
-    grouped.scholarships = schData.map((s: any) => ({
+    grouped.scholarships = (schData || []).map((s: any) => ({
       type: "scholarship" as const,
       title: s.scholarship_name,
       subtitle: `${s.university_name}, ${s.country}`,
