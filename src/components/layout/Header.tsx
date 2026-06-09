@@ -5,8 +5,8 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 
 const NAV = [
-  { label: "Education Loan",     href: "/education-loan" },
-  { label: "100% Scholarships",  href: "/scholarships", badge: "NEW" },
+  { label: "Best Loans",         href: "/best-education-loans", badge: "NEW" },
+  { label: "100% Scholarships",  href: "/scholarships" },
   { label: "Universities",       href: "/top-universities" },
   { label: "Students Abroad",    href: "/indian-students-abroad" },
   { label: "Accommodation",      href: "/student-accommodation" },

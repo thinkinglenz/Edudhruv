@@ -46,11 +46,12 @@ function buildRules(): LinkRule[] {
     }
   }
 
-  // Cornerstone pages
+  // Cornerstone pages — these get high-priority linking
   rules.push(
-    { pattern: /\b(100% scholarships?|fully[- ]funded scholarships?)\b/i, href: "/scholarships",       title: "100% Funded Scholarships" },
+    { pattern: /\b(100% scholarships?|fully[- ]funded scholarships?)\b/i, href: "/scholarships",        title: "100% Funded Scholarships" },
+    { pattern: /\b(best education loans?|compare education loans?|best student loans?)\b/i, href: "/best-education-loans", title: "Best Education Loans Comparison" },
     { pattern: /\b(free guidance|free counselling|talk to (?:our )?counsel?lor)\b/i, href: "/loan-portal", title: "Free Counselling" },
-    { pattern: /\b(Priya(?: Menon)?)\b/,                                  href: "/loan-portal",        title: "Chat with Priya" },
+    { pattern: /\b(Priya(?: Menon)?)\b/,                                  href: "/loan-portal",         title: "Chat with Priya" },
   );
 
   return rules;
