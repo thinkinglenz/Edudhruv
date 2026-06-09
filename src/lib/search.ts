@@ -129,7 +129,9 @@ export async function searchSite(q: string, limit = 30): Promise<SearchResponse>
           .eq("status", "published")
           .textSearch("search_tsv", query, { type: "websearch", config: "english" })
           .limit(postsLimit);
-        if (!error && data) postsData = data;
+        // Only use tsv result if it actually returned matches —
+        // if 0, fall through to ILIKE (which catches partial matches better).
+        if (!error && data && data.length > 0) postsData = data;
       } catch { /* tsv column missing — fall through */ }
     }
 
@@ -166,7 +168,7 @@ export async function searchSite(q: string, limit = 30): Promise<SearchResponse>
           .eq("status", "active")
           .textSearch("search_tsv", query, { type: "websearch", config: "english" })
           .limit(schLimit);
-        if (!error && data) schData = data;
+        if (!error && data && data.length > 0) schData = data;
       } catch { /* tsv column missing */ }
     }
 
