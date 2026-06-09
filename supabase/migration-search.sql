@@ -2,61 +2,85 @@
 -- Site-wide full-text search using Postgres tsvector
 -- ═══════════════════════════════════════════════════════════════════
 --
--- Postgres requires generated columns to use IMMUTABLE functions.
--- `to_tsvector(text, text)` is STABLE (not IMMUTABLE) because the
--- text->regconfig cast depends on current_setting.
---
--- Workaround: create an IMMUTABLE wrapper that hard-codes 'english'
--- as a regconfig literal. We can safely mark it IMMUTABLE because
--- 'english' is a fixed dictionary built into Postgres.
+-- Approach: regular tsvector columns + trigger functions that update
+-- them on insert/update. This is more reliable than generated columns
+-- because Postgres won't inline trigger functions, so the IMMUTABLE
+-- check that breaks generated columns doesn't apply.
 -- ═══════════════════════════════════════════════════════════════════
 
--- ─── IMMUTABLE wrapper ──────────────────────────────────────────────
-CREATE OR REPLACE FUNCTION edudhruv_search_tsv(content text)
-RETURNS tsvector
-LANGUAGE sql
-IMMUTABLE
-PARALLEL SAFE
-AS $$
-  SELECT to_tsvector('english'::regconfig, coalesce(content, ''))
-$$;
-
 -- ─── POSTS ──────────────────────────────────────────────────────────
-ALTER TABLE posts
-  ADD COLUMN IF NOT EXISTS search_tsv tsvector
-  GENERATED ALWAYS AS (
-    setweight(edudhruv_search_tsv(title),                             'A') ||
-    setweight(edudhruv_search_tsv(excerpt),                           'B') ||
-    setweight(edudhruv_search_tsv(array_to_string(tags, ' ')),        'B') ||
-    setweight(edudhruv_search_tsv(focus_keyword),                     'C') ||
-    setweight(edudhruv_search_tsv(category_slug),                     'C') ||
-    setweight(edudhruv_search_tsv(content),                           'D')
-  ) STORED;
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS search_tsv tsvector;
+
+CREATE OR REPLACE FUNCTION posts_search_tsv_update() RETURNS trigger AS $$
+BEGIN
+  NEW.search_tsv :=
+    setweight(to_tsvector('english', coalesce(NEW.title,          '')), 'A') ||
+    setweight(to_tsvector('english', coalesce(NEW.excerpt,        '')), 'B') ||
+    setweight(to_tsvector('english', coalesce(array_to_string(NEW.tags, ' '), '')), 'B') ||
+    setweight(to_tsvector('english', coalesce(NEW.focus_keyword,  '')), 'C') ||
+    setweight(to_tsvector('english', coalesce(NEW.category_slug,  '')), 'C') ||
+    setweight(to_tsvector('english', coalesce(NEW.content,        '')), 'D');
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_posts_search_tsv ON posts;
+CREATE TRIGGER trg_posts_search_tsv
+  BEFORE INSERT OR UPDATE OF title, excerpt, tags, focus_keyword, category_slug, content
+  ON posts
+  FOR EACH ROW EXECUTE FUNCTION posts_search_tsv_update();
+
+-- Backfill existing rows
+UPDATE posts SET search_tsv = NULL;  -- triggers UPDATE → fills via trigger
 
 CREATE INDEX IF NOT EXISTS idx_posts_search_tsv ON posts USING GIN(search_tsv);
 
 -- ─── SCHOLARSHIPS ───────────────────────────────────────────────────
-ALTER TABLE scholarships
-  ADD COLUMN IF NOT EXISTS search_tsv tsvector
-  GENERATED ALWAYS AS (
-    setweight(edudhruv_search_tsv(scholarship_name),                          'A') ||
-    setweight(edudhruv_search_tsv(university_name),                           'A') ||
-    setweight(edudhruv_search_tsv(country),                                   'B') ||
-    setweight(edudhruv_search_tsv(eligibility_summary),                       'C') ||
-    setweight(edudhruv_search_tsv(intake),                                    'C') ||
-    setweight(edudhruv_search_tsv(array_to_string(courses_covered, ' ')),     'C')
-  ) STORED;
+ALTER TABLE scholarships ADD COLUMN IF NOT EXISTS search_tsv tsvector;
+
+CREATE OR REPLACE FUNCTION scholarships_search_tsv_update() RETURNS trigger AS $$
+BEGIN
+  NEW.search_tsv :=
+    setweight(to_tsvector('english', coalesce(NEW.scholarship_name,    '')), 'A') ||
+    setweight(to_tsvector('english', coalesce(NEW.university_name,     '')), 'A') ||
+    setweight(to_tsvector('english', coalesce(NEW.country,             '')), 'B') ||
+    setweight(to_tsvector('english', coalesce(NEW.eligibility_summary, '')), 'C') ||
+    setweight(to_tsvector('english', coalesce(NEW.intake,              '')), 'C') ||
+    setweight(to_tsvector('english', coalesce(array_to_string(NEW.courses_covered, ' '), '')), 'C');
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_scholarships_search_tsv ON scholarships;
+CREATE TRIGGER trg_scholarships_search_tsv
+  BEFORE INSERT OR UPDATE OF scholarship_name, university_name, country, eligibility_summary, intake, courses_covered
+  ON scholarships
+  FOR EACH ROW EXECUTE FUNCTION scholarships_search_tsv_update();
+
+UPDATE scholarships SET search_tsv = NULL;  -- backfill
 
 CREATE INDEX IF NOT EXISTS idx_scholarships_search_tsv ON scholarships USING GIN(search_tsv);
 
 -- ─── UNIVERSITIES ───────────────────────────────────────────────────
-ALTER TABLE universities
-  ADD COLUMN IF NOT EXISTS search_tsv tsvector
-  GENERATED ALWAYS AS (
-    setweight(edudhruv_search_tsv(name),                                       'A') ||
-    setweight(edudhruv_search_tsv(country),                                    'B') ||
-    setweight(edudhruv_search_tsv(array_to_string(popular_courses, ' ')),      'C')
-  ) STORED;
+ALTER TABLE universities ADD COLUMN IF NOT EXISTS search_tsv tsvector;
+
+CREATE OR REPLACE FUNCTION universities_search_tsv_update() RETURNS trigger AS $$
+BEGIN
+  NEW.search_tsv :=
+    setweight(to_tsvector('english', coalesce(NEW.name,    '')), 'A') ||
+    setweight(to_tsvector('english', coalesce(NEW.country, '')), 'B') ||
+    setweight(to_tsvector('english', coalesce(array_to_string(NEW.popular_courses, ' '), '')), 'C');
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_universities_search_tsv ON universities;
+CREATE TRIGGER trg_universities_search_tsv
+  BEFORE INSERT OR UPDATE OF name, country, popular_courses
+  ON universities
+  FOR EACH ROW EXECUTE FUNCTION universities_search_tsv_update();
+
+UPDATE universities SET search_tsv = NULL;  -- backfill
 
 CREATE INDEX IF NOT EXISTS idx_universities_search_tsv ON universities USING GIN(search_tsv);
 
