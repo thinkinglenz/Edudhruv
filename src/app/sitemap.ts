@@ -21,6 +21,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/advertise`,            changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/scholarships`,         changeFrequency: "daily",   priority: 0.9 },
     { url: `${BASE}/best-education-loans`, changeFrequency: "weekly",  priority: 0.95 },  // High commercial intent — top priority
+    { url: `${BASE}/tools`,                                                              changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/tools/education-loan-emi-calculator`,                                changeFrequency: "monthly", priority: 0.9 },
+    { url: `${BASE}/tools/cost-of-studying-abroad-calculator`,                           changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE}/editorial-standards`,  changeFrequency: "yearly",  priority: 0.5 },
     { url: `${BASE}/privacy-policy`,       changeFrequency: "yearly",  priority: 0.3 },
     { url: `${BASE}/terms-and-conditions`, changeFrequency: "yearly",  priority: 0.3 },

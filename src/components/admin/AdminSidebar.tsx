@@ -25,6 +25,7 @@ const NAV_SECTIONS = [
     items: [
       { href: "/admin/marketing", icon: "📣", label: "Marketing" },
       { href: "/admin/social",    icon: "📤", label: "Social Sharing" },
+      { href: "/admin/quora",     icon: "✍️", label: "Quora Engine" },
       { href: "/admin/seo",       icon: "🔍", label: "SEO" },
     ],
   },

@@ -1,0 +1,42 @@
+name: Telegram Scholarship Broadcaster
+
+# Broadcasts new scholarships to the EduDhruv Telegram channel.
+# Runs every 6 hours. The script tracks state in .telegram_state.json
+# (committed back to repo) so we only send genuinely new entries.
+
+on:
+  schedule:
+    - cron: "15 */6 * * *"      # Every 6 hours at :15
+  workflow_dispatch: {}          # Allow manual trigger from Actions tab
+
+jobs:
+  broadcast:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write             # To commit updated state file
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run broadcaster
+        env:
+          TELEGRAM_BOT_TOKEN:        ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL_ID:       ${{ secrets.TELEGRAM_CHANNEL_ID }}
+          SUPABASE_URL:              ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SITE_URL:                  https://www.edudhruv.com
+        run: python automation/telegram_broadcaster.py
+
+      - name: Commit state file
+        run: |
+          if [ -f automation/.telegram_state.json ]; then
+            git config user.email "bot@edudhruv.com"
+            git config user.name "EduDhruv Bot"
+            git add automation/.telegram_state.json
+            git diff --staged --quiet || git commit -m "chore(telegram): update broadcast state"
+            git push || echo "nothing to push"
+          fi
