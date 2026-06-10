@@ -56,13 +56,21 @@ CLAUDE_MODEL         = os.getenv("CLAUDE_MODEL", "claude-3-5-haiku-20241022")
 MAX_TOKENS           = int(os.getenv("MAX_TOKENS", "8192"))
 AMAZON_TAG           = os.getenv("AMAZON_ASSOCIATE_ID", "edudhruv-20")
 
+# ─── YEAR — used in topic titles + prompts ────────────────────────────────
+# Students searching now are typically planning for the NEXT admission cycle.
+# E.g. in June 2026, queries spike for "scholarships 2027". We use current+1.
+YEAR = datetime.now().year + 1
+YEAR_PREV = YEAR - 1   # for "Class of {YEAR-1} → {YEAR}" type references
+
 # ─── TOPIC BANK ───────────────────────────────────────────────────────────
+# Use {YEAR} placeholder in any topic that needs a year — it's substituted
+# at runtime so the agent always publishes forward-looking content.
 TOPICS: dict[str, list[str]] = {
     "indian-students-abroad": [
         "How to Get a Student Visa for the UK as an Indian Student",
         "Life in Canada for Indian Students: What No One Tells You",
         "Top 5 Part-Time Jobs for Indian Students in Australia",
-        "Cost of Living for Indian Students in Germany 2025",
+        "Cost of Living for Indian Students in Germany {YEAR}",
         "How Indian Students Can Open a Bank Account in the UK",
         "Student Health Insurance for Indians Studying Abroad",
         "Indian Food in Australian Cities: A Survival Guide",
@@ -73,9 +81,9 @@ TOPICS: dict[str, list[str]] = {
         "Mental Health Support for Indian Students Studying Abroad",
     ],
     "top-universities": [
-        "Top 10 Universities in Canada for Indian Students 2025",
+        "Top 10 Universities in Canada for Indian Students {YEAR}",
         "Best Engineering Universities in Germany for International Students",
-        "QS Rankings 2025: Best Universities for MBA in UK",
+        "QS Rankings {YEAR}: Best Universities for MBA in UK",
         "NUS vs NTU — Which Singapore University is Better for Indian Students",
         "Top Universities in Australia for Computer Science",
         "University of Melbourne vs Monash: Which One Should You Choose",
@@ -85,8 +93,8 @@ TOPICS: dict[str, list[str]] = {
         "Best University Campuses in the World Ranked by Indian Students",
     ],
     "scholarship": [
-        "Top 10 Scholarships for Indian Students Studying Abroad 2025",
-        "Chevening Scholarship 2025: Complete Guide for Indians",
+        "Top 10 Scholarships for Indian Students Studying Abroad {YEAR}",
+        "Chevening Scholarship {YEAR}: Complete Guide for Indians",
         "Commonwealth Scholarship: How to Apply as an Indian Student",
         "Australia Awards Scholarship: Step-by-Step Guide for Indians",
         "DAAD Scholarship Germany: Everything Indian Students Need to Know",
@@ -97,7 +105,7 @@ TOPICS: dict[str, list[str]] = {
         "How to Write a Winning Scholarship Essay: Tips for Indians",
     ],
     "education-loan": [
-        "SBI Education Loan for Abroad Studies: Complete Guide 2025",
+        "SBI Education Loan for Abroad Studies: Complete Guide {YEAR}",
         "HDFC Credila vs Avanse: Which Education Loan is Better",
         "How to Get Education Loan Without Collateral for Abroad Studies",
         "Education Loan Tax Benefit Under Section 80E Explained",
@@ -123,7 +131,7 @@ TOPICS: dict[str, list[str]] = {
     "travel-essentials": [
         "Best Travel Insurance for Indian Students Studying Abroad",
         "What to Pack for UK Studies: The Ultimate Indian Student Checklist",
-        "Cheapest Flights from India to UK, Canada, Australia in 2025",
+        "Cheapest Flights from India to UK, Canada, Australia in {YEAR}",
         "Student Discount Cards for Travel in Europe",
         "How to Get an International Driving Permit as an Indian Student",
         "Best Budget Airlines for Students in Europe",
@@ -330,11 +338,17 @@ def get_used_topics() -> dict[str, list[str]]:
 
 def pick_topic(cycle: int, used: dict[str, list[str]]) -> tuple[str, str]:
     category = CYCLE_ORDER[cycle % len(CYCLE_ORDER)]
-    all_topics = TOPICS[category]
+    # Substitute {YEAR} placeholder so topics always reference the next intake
+    all_topics = [t.format(YEAR=YEAR, YEAR_PREV=YEAR_PREV) for t in TOPICS[category]]
     done = used.get(category, [])
-    available = [t for t in all_topics if t not in done]
+    # Strip year from comparison so we don't re-pick "Chevening 2026" after publishing
+    # the same topic for 2025. Compare base form (without year).
+    import re as _re
+    def base(t: str) -> str:
+        return _re.sub(r"\s+\d{4}", "", t).strip()
+    done_bases = {base(t) for t in done}
+    available = [t for t in all_topics if base(t) not in done_bases]
     if not available:
-        # All done — reset this category
         log.info(f"All topics used for {category}, resetting")
         available = all_topics
     return category, random.choice(available)
@@ -351,14 +365,19 @@ def get_current_cycle() -> int:
 
 # ─── CONTENT GENERATION ───────────────────────────────────────────────────
 
-SYSTEM_PROMPT = """You are an expert education writer for EduDhruv.com — India's most trusted study abroad platform.
+SYSTEM_PROMPT = f"""You are an expert education writer for EduDhruv.com — India's most trusted study abroad platform.
 Write like a knowledgeable senior who has personally helped hundreds of Indian students study abroad.
+
+CURRENT YEAR: {datetime.now().year}. UPCOMING ADMISSION CYCLE: {YEAR}.
+Whenever you reference dates, deadlines, fees, or visa rules, target the {YEAR} cycle
+(or whichever specific cycle is relevant to the topic). NEVER write about a past year as if
+it were current — students applying now are planning for {YEAR}, not {YEAR-2}.
 
 Writing rules:
 - Warm, practical, specific — real data, real bank names, real numbers
 - Indian context: mention INR, RBI, IELTS scores, Indian cities where relevant
 - 100% original, E-E-A-T compliant, human-sounding (not AI-generated)
-- 2025 data where possible
+- Forward-looking: use {YEAR}/{YEAR+1} data, not stale {YEAR-2} numbers
 - Return VALID JSON ONLY — no markdown, no code fences, no explanation"""
 
 
@@ -397,7 +416,7 @@ POST_SCHEMA = {
         },
         "body": {
             "type": "string",
-            "description": "REQUIRED — THE LONGEST FIELD BY FAR (must be 5000-8000 characters, ~1200-1600 words). This is the MAIN article body as a single HTML string. Structure: start with <h2>section heading</h2>, then 3-4 <p> paragraphs, repeat for 4-6 different sections covering different aspects of the topic. Use <ul><li>...</li></ul> for lists, <strong> for emphasis. End with <h2>Frequently Asked Questions</h2> followed by 4+ <h3>question</h3><p>answer</p> pairs. Include at least one internal link <a href=\"/education-loan/\">education loan</a>. Reference specific 2025/2026 data points. Do NOT include the intro paragraphs again — only the substantive body content AFTER the intro.",
+            "description": f"REQUIRED — THE LONGEST FIELD BY FAR (must be 5000-8000 characters, ~1200-1600 words). This is the MAIN article body as a single HTML string. Structure: start with <h2>section heading</h2>, then 3-4 <p> paragraphs, repeat for 4-6 different sections covering different aspects of the topic. Use <ul><li>...</li></ul> for lists, <strong> for emphasis. End with <h2>Frequently Asked Questions</h2> followed by 4+ <h3>question</h3><p>answer</p> pairs. Include at least one internal link <a href=\"/education-loan/\">education loan</a>. Reference specific {YEAR}/{YEAR+1} data points (do NOT use {YEAR-2} or older). Do NOT include the intro paragraphs again — only the substantive body content AFTER the intro.",
             "minLength": 4500,
         },
         "tags": {
@@ -468,7 +487,7 @@ Structure your body like this (and verify length BEFORE submitting):
 
 ═══ OTHER REQUIREMENTS ═══
 
-- Include 2025/2026 statistics, real bank names, real visa subclass numbers, real fees in INR
+- Include {YEAR}/{YEAR+1} statistics, real bank names, real visa subclass numbers, real fees in INR (NEVER use {YEAR-2} as the headline year)
 - Indian audience — use Indian Rupee equivalents and Indian-context examples
 - slug: lowercase, hyphens only, no special chars, max 80 chars
 - intro: 2 short <p> paragraphs (2-4 sentences each) — separate from body
