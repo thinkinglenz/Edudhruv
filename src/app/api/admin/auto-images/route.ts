@@ -108,11 +108,24 @@ export async function POST(req: NextRequest) {
   for (const p of posts) {
     const baseQ = CATEGORY_QUERIES[p.category_slug] || "education student";
     const titleHead = p.title.split(/\s+/).slice(0, 3).join(" ");
-    const query = `${titleHead} ${baseQ}`;
 
-    const img = await unsplashOne(query);
+    // Try in order: title+category → category alone → generic education
+    // Unsplash returns null for over-specific multi-word queries.
+    const queries = [
+      `${titleHead} ${baseQ}`,
+      baseQ,
+      "education student",
+    ];
+
+    let img = null;
+    for (const q of queries) {
+      img = await unsplashOne(q);
+      if (img) break;
+      await new Promise(r => setTimeout(r, 300));  // small backoff between retries
+    }
+
     if (!img) {
-      errors.push({ slug: p.slug, error: "Unsplash returned no image" });
+      errors.push({ slug: p.slug, error: "Unsplash returned no image (tried 3 queries)" });
       continue;
     }
 
