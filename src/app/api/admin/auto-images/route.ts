@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
   if (dryRun) {
     return NextResponse.json({
       would_update: posts.length,
-      samples: posts.slice(0, 5).map(p => `${p.category_slug}/${p.slug}`),
+      samples: posts.slice(0, 5).map((p: any) => `${p.category_slug}/${p.slug}`),
     });
   }
 
