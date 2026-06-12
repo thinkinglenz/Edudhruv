@@ -33,6 +33,7 @@ const NAV_SECTIONS = [
     label: "System",
     items: [
       { href: "/admin/agent",    icon: "🤖",  label: "Blog Agent" },
+      { href: "/admin/tools",    icon: "🛠️",  label: "Bulk Tools" },
       { href: "/admin/settings", icon: "⚙️",  label: "Settings & Keys" },
       { href: "/admin/profile",  icon: "👤",  label: "My Profile" },
     ],

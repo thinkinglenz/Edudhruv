@@ -12,10 +12,22 @@
  * Returns: { updated, skipped, errors, samples }
  */
 import { NextRequest, NextResponse } from "next/server";
+import { ADMIN_COOKIE, verifySession } from "@/lib/admin-auth";
 
 export const runtime    = "nodejs";
 export const dynamic    = "force-dynamic";
 export const maxDuration = 60;  // up to 60s per request
+
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "EduDhruv@Admin2025";
+
+function isAuthenticated(req: NextRequest): boolean {
+  // Accept either the revalidate secret (for cron/script use) or admin cookie (for UI button)
+  const secret = req.headers.get("x-revalidate-secret");
+  if (process.env.REVALIDATE_SECRET && secret === process.env.REVALIDATE_SECRET) return true;
+  const cookie = req.cookies.get(ADMIN_COOKIE)?.value;
+  if (cookie && verifySession(cookie, ADMIN_PASSWORD, "admin_ok")) return true;
+  return false;
+}
 
 const CATEGORY_QUERIES: Record<string, string> = {
   "education-loan":         "indian student bank finance loan",
@@ -58,8 +70,7 @@ async function unsplashOne(query: string): Promise<{ url: string; alt: string; c
 }
 
 export async function POST(req: NextRequest) {
-  const secret = req.headers.get("x-revalidate-secret");
-  if (!process.env.REVALIDATE_SECRET || secret !== process.env.REVALIDATE_SECRET) {
+  if (!isAuthenticated(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
