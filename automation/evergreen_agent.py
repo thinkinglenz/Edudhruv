@@ -503,6 +503,36 @@ Now generate and call publish_blog_post with ALL 10 fields populated."""
 
 MIN_BODY_WORDS = 600   # below this we treat the post as broken and skip publishing
 
+def slug_exists(slug: str) -> bool:
+    """Check whether a slug is already taken in posts (any status)."""
+    try:
+        rows = supabase_get("posts", f"select=id&slug=eq.{slug}&limit=1")
+        return bool(rows)
+    except Exception:
+        return False
+
+
+def slug_too_similar(slug: str, threshold: int = 5) -> bool:
+    """
+    Reject slugs that look like near-duplicates of existing ones.
+    Strips trailing year + variant suffix, compares stems.
+    Returns True if base-form already exists with the same first 4 words.
+    """
+    import re as _re
+    # Strip trailing variant suffix and year
+    base = _re.sub(r"-\d+$", "", slug)
+    base = _re.sub(r"-(20\d\d)(-\d{2})?$", "", base)
+    base = base.strip("-")
+    # Get first 4 stem words
+    head = "-".join(base.split("-")[:5])
+    if len(head) < 15: return False  # too short to be meaningful
+    try:
+        rows = supabase_get("posts", f"select=slug&slug=ilike.{head}*&limit=10")
+        return any(r["slug"] != slug for r in rows)
+    except Exception:
+        return False
+
+
 def publish_post(post_data: dict, category_slug: str, image: dict | None) -> dict:
     # Log what fields we actually got from Claude (helps diagnose missing data)
     log.info(f"  Claude returned keys: {sorted(post_data.keys())}")
@@ -511,6 +541,22 @@ def publish_post(post_data: dict, category_slug: str, image: dict | None) -> dic
         raise ValueError(f"Claude omitted 'title'. Got: {list(post_data.keys())}")
     if not post_data.get("slug"):
         raise ValueError(f"Claude omitted 'slug'. Got: {list(post_data.keys())}")
+
+    # ─── SLUG UNIQUENESS GUARDS ──────────────────────────────────────
+    # Refuse to publish if this exact slug or a near-duplicate already exists.
+    # Better to skip the topic entirely than create a "-2", "-3" sibling
+    # that Google will see as duplicate content and refuse to index.
+    proposed_slug = post_data["slug"]
+    if slug_exists(proposed_slug):
+        raise ValueError(
+            f"DUPLICATE_SLUG: '{proposed_slug}' already exists. "
+            f"Skipping to avoid creating a -2/-3 sibling that Google won't index."
+        )
+    if slug_too_similar(proposed_slug):
+        raise ValueError(
+            f"DUPLICATE_SLUG: '{proposed_slug}' is too similar to an existing post. "
+            f"Skipping to avoid near-duplicate content."
+        )
 
     # Body might come back under different names depending on model
     body = (
@@ -644,14 +690,30 @@ def main():
     else:
         log.info("No image (no Unsplash key or API error)")
 
-    # Generate content
-    log.info("Calling Claude to generate content...")
-    t0 = time.time()
-    post_data = generate_post(topic, category_name)
-    log.info(f"Content generated in {time.time()-t0:.1f}s — title: {post_data['title']}")
+    # Generate content + publish — retry up to 3 times if slug collides
+    MAX_TRIES = 3
+    result = None
+    for attempt in range(1, MAX_TRIES + 1):
+        log.info(f"Calling Claude to generate content... (attempt {attempt}/{MAX_TRIES})")
+        t0 = time.time()
+        post_data = generate_post(topic, category_name)
+        log.info(f"Content generated in {time.time()-t0:.1f}s — title: {post_data['title']}")
+        try:
+            result = publish_post(post_data, category_slug, image)
+            break
+        except ValueError as e:
+            if str(e).startswith("DUPLICATE_SLUG") and attempt < MAX_TRIES:
+                log.warning(f"  Duplicate slug — picking a different topic and retrying")
+                # Re-pick topic, excluding the one that just collided
+                used.setdefault(category_slug, []).append(topic)
+                category_slug, topic = pick_topic(cycle + attempt, used)
+                category_name = category_names.get(category_slug, category_slug)
+                continue
+            raise
 
-    # Publish
-    result = publish_post(post_data, category_slug, image)
+    if not result:
+        raise RuntimeError(f"Could not publish after {MAX_TRIES} attempts — all topics produced duplicate slugs")
+
     post_slug = result.get("slug", post_data["slug"])
 
     # Mark topic used
