@@ -30,6 +30,33 @@ const TOOLS = [
     cta: "Calculate Cost →",
     keywords: "Total cost · Per country · INR",
   },
+  {
+    href: "/tools/study-abroad-roi-calculator",
+    icon: "📊",
+    title: "Study Abroad ROI Calculator",
+    description: "10-year ROI projection — will it pay off vs staying in India? Realistic salary + tax + EMI math.",
+    color: "#10B981",
+    cta: "Run the math →",
+    keywords: "ROI · Salary · 10-yr projection",
+  },
+  {
+    href: "/tools/university-shortlist-quiz",
+    icon: "🎯",
+    title: "University Shortlisting Quiz",
+    description: "5 questions → 5 best-fit universities for your profile (country, field, budget, test scores).",
+    color: "#8B5CF6",
+    cta: "Take the quiz →",
+    keywords: "Shortlist · Best-fit · 60 sec",
+  },
+  {
+    href: "/free-guides/100-funded-scholarships",
+    icon: "📚",
+    title: "100% Funded Scholarships — Free PDF",
+    description: "60+ fully-funded scholarships organized by country with deadlines + amounts + apply links.",
+    color: "#B45309",
+    cta: "Download free →",
+    keywords: "PDF · 60+ scholarships · Free",
+  },
 ];
 
 export default function ToolsPage() {

@@ -4,6 +4,7 @@ import { CATEGORIES } from "@/lib/categories";
 import { AUTHORS } from "@/lib/authors";
 import { COUNTRIES } from "@/lib/countries";
 import { UNIVERSITY_DETAILS } from "@/lib/universities-detail";
+import { COURSES } from "@/lib/courses-data";
 
 // Use SITE_URL env var if set (e.g. https://edudhruv.vercel.app while DNS propagates),
 // otherwise default to the production domain.
@@ -25,6 +26,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/tools`,                                                              changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/tools/education-loan-emi-calculator`,                                changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE}/tools/cost-of-studying-abroad-calculator`,                           changeFrequency: "monthly", priority: 0.9 },
+    { url: `${BASE}/tools/study-abroad-roi-calculator`,                                   changeFrequency: "monthly", priority: 0.9 },
+    { url: `${BASE}/tools/university-shortlist-quiz`,                                     changeFrequency: "monthly", priority: 0.9 },
+    { url: `${BASE}/free-guides/100-funded-scholarships`,                                 changeFrequency: "monthly", priority: 0.85 },
     { url: `${BASE}/editorial-standards`,  changeFrequency: "yearly",  priority: 0.5 },
     { url: `${BASE}/privacy-policy`,       changeFrequency: "yearly",  priority: 0.3 },
     { url: `${BASE}/terms-and-conditions`, changeFrequency: "yearly",  priority: 0.3 },
@@ -72,8 +76,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.95,  // Highest after best-loans + scholarships
   }));
 
+  // Course landing pages — buyer-intent ("MS CS in USA", "MBA in UK")
+  const coursePages: MetadataRoute.Sitemap = COURSES.map(c => ({
+    url: `${BASE}/courses/${c.slug}`,
+    changeFrequency: "weekly" as const,
+    priority: 0.9,
+  }));
+
   return [
     ...staticPages, ...categoryPages, ...postPages, ...tagPages,
-    ...authorPages, ...countryPages, ...universityPages,
+    ...authorPages, ...countryPages, ...universityPages, ...coursePages,
   ];
 }

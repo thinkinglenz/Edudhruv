@@ -5,9 +5,11 @@ import Footer from "./Footer";
 
 export default function SiteShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAdmin = pathname.startsWith("/admin");
+  const isAdmin       = pathname.startsWith("/admin");
+  const isLeadMagnet  = pathname.startsWith("/lead-magnets");
 
-  if (isAdmin) return <>{children}</>;
+  // No site chrome on admin OR lead-magnet pages (print-friendly)
+  if (isAdmin || isLeadMagnet) return <>{children}</>;
 
   return (
     <>
