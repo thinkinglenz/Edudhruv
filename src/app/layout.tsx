@@ -80,15 +80,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        {/* Performance: preconnect to CDN origins we actually use on first paint */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://pagead2.googlesyndication.com" />
-        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        {/* Performance: preconnect ONLY to origins we use on first paint.
+            PageSpeed warns at >4 preconnects — keep these 3 most-critical. */}
         <link rel="preconnect" href="https://upload.wikimedia.org" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
-        {/* DNS prefetch — secondary origins */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        {/* DNS prefetch — cheaper than preconnect, can be many */}
+        <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://www.google-analytics.com" />
-        <link rel="dns-prefetch" href="https://api.indexnow.org" />
 
         {/* AdSense account verification — required for site approval */}
         <meta name="google-adsense-account" content={ADSENSE_ID} />
