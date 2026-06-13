@@ -135,8 +135,11 @@ function PostSlideView({ post }: { post: Post }) {
           src={post.featured_image_url}
           alt={post.featured_image_alt || post.title}
           fill
+          sizes="(max-width: 1280px) 100vw, 1152px"
+          quality={70}
           className="object-cover group-hover:scale-105 transition-transform duration-700"
           priority
+          fetchPriority="high"
         />
       ) : (
         <div className="w-full h-full" style={{ background: "linear-gradient(135deg, #3AAFE5, #1575A8)" }} />
@@ -189,6 +192,8 @@ function SponsoredSlideView({ slide }: { slide: SponsoredSlide }) {
           src={slide.image}
           alt={slide.title}
           fill
+          sizes="(max-width: 1280px) 100vw, 1152px"
+          quality={70}
           className="object-cover group-hover:scale-105 transition-transform duration-700"
         />
       ) : (

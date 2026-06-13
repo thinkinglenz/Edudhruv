@@ -196,8 +196,11 @@ export default async function PostPage({
                   src={post.featured_image_url}
                   alt={post.featured_image_alt || post.title}
                   fill
+                  sizes="(max-width: 1024px) 100vw, 800px"
+                  quality={70}
                   className="object-cover"
                   priority
+                  fetchPriority="high"
                 />
               </div>
               {post.featured_image_credit && (

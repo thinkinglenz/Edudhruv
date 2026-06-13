@@ -20,6 +20,9 @@ export default function PostCard({ post }: { post: Post }) {
             src={post.featured_image_url}
             alt={post.featured_image_alt || post.title}
             fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
+            quality={70}
+            loading="lazy"
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         </Link>

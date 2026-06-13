@@ -55,6 +55,19 @@ const nextConfig = {
         source: "/ads.txt",
         headers: [{ key: "Content-Type", value: "text/plain" }],
       },
+      // Long-cache static assets (PageSpeed: "Use efficient cache lifetimes")
+      {
+        source: "/banners/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
+      {
+        source: "/logo.jpg",
+        headers: [{ key: "Cache-Control", value: "public, max-age=604800" }],  // 1 week
+      },
+      {
+        source: "/favicon.jpg",
+        headers: [{ key: "Cache-Control", value: "public, max-age=2592000" }],  // 30 days
+      },
       // ─── Admin panel — block ALL search engines ─────────────────
       // X-Robots-Tag works even if bots ignore robots.txt or run JS
       {
