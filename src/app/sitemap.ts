@@ -3,6 +3,7 @@ import { getAllPublishedSlugs, getAllTagsWithCounts } from "@/lib/supabase";
 import { CATEGORIES } from "@/lib/categories";
 import { AUTHORS } from "@/lib/authors";
 import { COUNTRIES } from "@/lib/countries";
+import { UNIVERSITY_DETAILS } from "@/lib/universities-detail";
 
 // Use SITE_URL env var if set (e.g. https://edudhruv.vercel.app while DNS propagates),
 // otherwise default to the production domain.
@@ -61,8 +62,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const countryPages: MetadataRoute.Sitemap = COUNTRIES.map(c => ({
     url: `${BASE}/study-in/${c.slug}`,
     changeFrequency: "weekly" as const,
-    priority: 0.9,  // Very high — buyer-intent
+    priority: 0.9,
   }));
 
-  return [...staticPages, ...categoryPages, ...postPages, ...tagPages, ...authorPages, ...countryPages];
+  // University detail pages — highest buyer-intent commercial pages
+  const universityPages: MetadataRoute.Sitemap = UNIVERSITY_DETAILS.map(u => ({
+    url: `${BASE}/university/${u.slug}`,
+    changeFrequency: "weekly" as const,
+    priority: 0.95,  // Highest after best-loans + scholarships
+  }));
+
+  return [
+    ...staticPages, ...categoryPages, ...postPages, ...tagPages,
+    ...authorPages, ...countryPages, ...universityPages,
+  ];
 }

@@ -60,6 +60,13 @@ function buildRules(): LinkRule[] {
     { pattern: /\b(study in Australia)\b/i,                               href: "/study-in/australia",  title: "Study in Australia from India — Complete Guide" },
     { pattern: /\b(study in Germany)\b/i,                                 href: "/study-in/germany",    title: "Study in Germany from India — Complete Guide" },
     { pattern: /\b(study in Singapore)\b/i,                               href: "/study-in/singapore",  title: "Study in Singapore from India — Complete Guide" },
+
+    // University detail pages — auto-link first mention of university names
+    { pattern: /\bMIT\b|\bMassachusetts Institute of Technology\b/i, href: "/university/massachusetts-institute-of-technology", title: "MIT for Indian Students — Fees, Admissions, Scholarships" },
+    { pattern: /\bStanford(?:\s+University)?\b/i,                    href: "/university/stanford-university",                   title: "Stanford for Indian Students — Fees, Scholarships, Programs" },
+    { pattern: /\bHarvard(?:\s+University)?\b/i,                     href: "/university/harvard-university",                    title: "Harvard for Indian Students — Fees, Aid, HBS MBA" },
+    { pattern: /\bOxford(?:\s+University)?\b|\bUniversity of Oxford\b/i, href: "/university/university-of-oxford",              title: "Oxford for Indian Students — Rhodes, Clarendon, Said MBA" },
+    { pattern: /\bCambridge(?:\s+University)?\b|\bUniversity of Cambridge\b/i, href: "/university/university-of-cambridge",     title: "Cambridge for Indian Students — Gates, Judge MBA" },
   );
 
   return rules;
