@@ -168,7 +168,7 @@ export default function ROICalculator() {
               </p>
               {result.breakEvenYear && (
                 <p className="text-blue-900 mt-1">
-                  <strong>Break-even:</strong> Year {result.breakEvenYear} — that's when abroad cumulative > India cumulative.
+                  <strong>Break-even:</strong> Year {result.breakEvenYear} — that's when abroad cumulative beats India cumulative.
                 </p>
               )}
             </div>
