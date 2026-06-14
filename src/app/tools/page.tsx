@@ -84,6 +84,24 @@ const TOOLS = [
     cta: "Browse test guides →",
     keywords: "Syllabus · Fees · Target scores",
   },
+  {
+    href: "/free-guides/sop-samples",
+    icon: "📝",
+    title: "SOP Samples Library — Free PDF",
+    description: "3 complete winning SOPs (MS CS, MBA, MSc Finance) with line-by-line analysis of what made them work.",
+    color: "#7C2D92",
+    cta: "Download free →",
+    keywords: "Full essays · Analysis · Free",
+  },
+  {
+    href: "/admission-stories",
+    icon: "❤️",
+    title: "Real Admission Stories",
+    description: "Read how Indian students got into MIT, Stanford, Oxford — their stats, prep, struggles, and advice.",
+    color: "#991B1B",
+    cta: "Read stories →",
+    keywords: "Real students · By university · Inspiration",
+  },
 ];
 
 export default function ToolsPage() {

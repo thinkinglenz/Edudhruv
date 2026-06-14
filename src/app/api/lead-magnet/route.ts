@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const MAGNETS = new Set([
   "100-funded-scholarships-master-list",
+  "sop-samples-library",
   "education-loan-comparison-2027",
   "ms-cs-usa-application-checklist",
   "mba-applications-timeline-2027",
