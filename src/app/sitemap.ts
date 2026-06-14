@@ -5,6 +5,7 @@ import { AUTHORS } from "@/lib/authors";
 import { COUNTRIES } from "@/lib/countries";
 import { UNIVERSITY_DETAILS } from "@/lib/universities-detail";
 import { COURSES } from "@/lib/courses-data";
+import { TESTS } from "@/lib/test-prep-data";
 
 // Use SITE_URL env var if set (e.g. https://edudhruv.vercel.app while DNS propagates),
 // otherwise default to the production domain.
@@ -28,6 +29,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/tools/cost-of-studying-abroad-calculator`,                           changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE}/tools/study-abroad-roi-calculator`,                                   changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE}/tools/university-shortlist-quiz`,                                     changeFrequency: "monthly", priority: 0.9 },
+    { url: `${BASE}/tools/profile-evaluator`,                                             changeFrequency: "monthly", priority: 0.9 },
+    { url: `${BASE}/tools/application-timeline`,                                          changeFrequency: "monthly", priority: 0.9 },
+    { url: `${BASE}/test-prep`,                                                           changeFrequency: "monthly", priority: 0.85 },
+    ...TESTS.map(t => ({
+      url: `${BASE}/test-prep/${t.slug}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.9,
+    })),
     { url: `${BASE}/free-guides/100-funded-scholarships`,                                 changeFrequency: "monthly", priority: 0.85 },
     { url: `${BASE}/editorial-standards`,  changeFrequency: "yearly",  priority: 0.5 },
     { url: `${BASE}/privacy-policy`,       changeFrequency: "yearly",  priority: 0.3 },

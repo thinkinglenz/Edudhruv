@@ -57,6 +57,33 @@ const TOOLS = [
     cta: "Download free →",
     keywords: "PDF · 60+ scholarships · Free",
   },
+  {
+    href: "/tools/profile-evaluator",
+    icon: "🎯",
+    title: "Profile Evaluator",
+    description: "Honest admission-chance estimate. Enter CGPA, GRE/GMAT, IELTS, work-ex → see your % chance at Top 10/30/50.",
+    color: "#8B5CF6",
+    cta: "Evaluate my profile →",
+    keywords: "Chance % · 30 sec · Top 10/30/50",
+  },
+  {
+    href: "/tools/application-timeline",
+    icon: "📅",
+    title: "Application Timeline Builder",
+    description: "Personalised month-by-month checklist for your target intake. From shortlisting to packing flights.",
+    color: "#6D28D9",
+    cta: "Build my timeline →",
+    keywords: "Per intake · Per country · Checklist",
+  },
+  {
+    href: "/test-prep",
+    icon: "📝",
+    title: "Test Prep — GRE, GMAT, IELTS",
+    description: "Complete guides for GRE, GMAT, IELTS — syllabus, fees, scoring, target bands for top universities.",
+    color: "#3AAFE5",
+    cta: "Browse test guides →",
+    keywords: "Syllabus · Fees · Target scores",
+  },
 ];
 
 export default function ToolsPage() {
