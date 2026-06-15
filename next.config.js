@@ -114,12 +114,18 @@ const nextConfig = {
       { source: "/about-edudhruv",  destination: "/about",   permanent: true },
       { source: "/contact-us",      destination: "/contact", permanent: true },
 
-      // ─── WordPress generic URL patterns ──────────────────────────
-      { source: "/category/:slug",                destination: "/:slug",    permanent: true },
-      { source: "/category/:slug/page/:num",      destination: "/:slug",    permanent: true },
-      { source: "/category/technology",           destination: "/",         permanent: true },
-      { source: "/category/news",                 destination: "/",         permanent: true },
+      // ─── WordPress category patterns ─────────────────────────────
+      // IMPORTANT: specific category overrides MUST come before the
+      // generic /category/:slug wildcard, or the wildcard matches first.
+      { source: "/category/technology",           destination: "/",                 permanent: true },
+      { source: "/category/technology/:num*",     destination: "/",                 permanent: true },
+      { source: "/category/news",                 destination: "/",                 permanent: true },
+      { source: "/category/news/:num*",           destination: "/",                 permanent: true },
       { source: "/category/university-news",      destination: "/top-universities", permanent: true },
+      { source: "/category/university-news/:num*",destination: "/top-universities", permanent: true },
+      // Generic fallbacks AFTER the specific overrides
+      { source: "/category/:slug/page/:num",      destination: "/:slug",    permanent: true },
+      { source: "/category/:slug",                destination: "/:slug",    permanent: true },
       // NOTE: /tag/:slug NOT redirected — we have real tag pages now
       // NOTE: /author/:slug NOT redirected — we have real author pages
       { source: "/author/admin",                  destination: "/about",    permanent: true },
