@@ -1,0 +1,9 @@
+/** Legacy WP /news/{slug} → canonical via slug lookup */
+import { redirectToCanonicalOrNotFound } from "@/lib/legacy-redirect";
+
+export const dynamic = "force-dynamic";
+
+export default async function LegacyNewsSlug({ params }: { params: { slug: string } }) {
+  await redirectToCanonicalOrNotFound(params.slug);
+  return null;
+}

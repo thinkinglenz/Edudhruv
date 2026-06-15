@@ -1,0 +1,12 @@
+/**
+ * Legacy redirect: /scholarships/{slug} (with 's') → canonical category URL.
+ * Old WordPress had posts under /scholarships/; new canonical is /scholarship/{slug}.
+ */
+import { redirectToCanonicalOrNotFound } from "@/lib/legacy-redirect";
+
+export const dynamic = "force-dynamic";
+
+export default async function LegacyScholarshipsSlug({ params }: { params: { slug: string } }) {
+  await redirectToCanonicalOrNotFound(params.slug);
+  return null;
+}

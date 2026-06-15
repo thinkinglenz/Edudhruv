@@ -115,12 +115,29 @@ const nextConfig = {
       { source: "/contact-us",      destination: "/contact", permanent: true },
 
       // ─── WordPress generic URL patterns ──────────────────────────
-      { source: "/category/:slug",  destination: "/:slug",      permanent: true },
+      { source: "/category/:slug",                destination: "/:slug",    permanent: true },
+      { source: "/category/:slug/page/:num",      destination: "/:slug",    permanent: true },
+      { source: "/category/technology",           destination: "/",         permanent: true },
+      { source: "/category/news",                 destination: "/",         permanent: true },
+      { source: "/category/university-news",      destination: "/top-universities", permanent: true },
       // NOTE: /tag/:slug NOT redirected — we have real tag pages now
-      // (src/app/tag/[slug]/page.tsx) for long-tail keyword SEO
       // NOTE: /author/:slug NOT redirected — we have real author pages
-      // with ProfilePage schema for E-E-A-T (src/app/author/[slug]/page.tsx)
-      { source: "/page/:num",       destination: "/",           permanent: true },
+      { source: "/author/admin",                  destination: "/about",    permanent: true },
+      { source: "/author/admin/:slug*",           destination: "/about",    permanent: true },
+      { source: "/author/edu-agent",              destination: "/about",    permanent: true },
+      { source: "/author/edu-agent/:slug*",       destination: "/about",    permanent: true },
+      { source: "/page/:num",                     destination: "/",         permanent: true },
+      { source: "/4.0",                           destination: "/",         permanent: true },
+      { source: "/apply-uk-visa",                 destination: "/travel-essentials", permanent: true },
+
+      // ─── Old WP category landings without a post slug → homepage ─
+      // (When user just hits /news or /admissions without a post)
+      { source: "/news",                          destination: "/",         permanent: true },
+      { source: "/admissions",                    destination: "/",         permanent: true },
+      { source: "/general",                       destination: "/",         permanent: true },
+      { source: "/cities",                        destination: "/",         permanent: true },
+      { source: "/featured",                      destination: "/",         permanent: true },
+      { source: "/university-news",               destination: "/top-universities", permanent: true },
 
       // ─── WordPress admin → Vercel admin ──────────────────────────
       { source: "/wp-admin",        destination: "/admin",       permanent: false },
