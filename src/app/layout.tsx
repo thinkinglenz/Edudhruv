@@ -13,6 +13,10 @@ export const metadata: Metadata = {
     template: "%s | EduDhruv",
   },
   description: "EduDhruv — A one-stop solution for your career progression. Free guidance on education loans, scholarships, university admissions and visas for Indian students.",
+  // Sitewide canonical fallback — individual pages override via their own
+  // `alternates.canonical`. This catches routes that don't define metadata
+  // (most notably the homepage), preventing 'Google chose different canonical'.
+  alternates: { canonical: "/" },
   icons: { icon: "/favicon.jpg", shortcut: "/favicon.jpg", apple: "/favicon.jpg" },
   openGraph: {
     siteName: "EduDhruv", locale: "en_IN", type: "website",
