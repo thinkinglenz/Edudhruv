@@ -1,5 +1,6 @@
 "use client";
 import { useEffect } from "react";
+import { ListMyAIBanner, ThinkingLenzBanner } from "./RotatingBanner";
 
 const CLIENT   = process.env.NEXT_PUBLIC_ADSENSE_ID       || "ca-pub-8001713028154145";
 const SLOT_LB  = process.env.NEXT_PUBLIC_AD_SLOT_LEADERBOARD || "";  // 728×90
@@ -23,19 +24,21 @@ function AdUnit({ slot, format = "auto", style, className = "" }: Props) {
     } catch {}
   }, [slot]);
 
-  // Dev placeholder — shows correct size without loading AdSense
-  if (IS_DEV || !slot) {
+  // Dev placeholder — shows in local dev only, never in production
+  if (IS_DEV) {
     const [w, h] = format === "horizontal" ? [728, 90] : format === "rectangle" ? [300, 250] : [336, 280];
     return (
       <div
         className={`flex items-center justify-center bg-gray-100 border border-dashed border-gray-300 rounded text-xs text-gray-400 ${className}`}
         style={{ width: "100%", maxWidth: w, height: h, ...style }}
       >
-        Ad Unit ({w}×{h})
-        {!slot && <span className="ml-1 text-red-400">— add slot ID to .env</span>}
+        Ad Unit ({w}×{h}) — dev mode
       </div>
     );
   }
+
+  // Production with no slot ID configured — render nothing (caller will show fallback)
+  if (!slot) return null;
 
   return (
     <ins
@@ -50,9 +53,15 @@ function AdUnit({ slot, format = "auto", style, className = "" }: Props) {
 }
 
 // ─── Preset exports ────────────────────────────────────────────────────────
+// Each ad component renders a useful brand banner as fallback when its
+// AdSense slot ID is missing, so the visual space is never wasted with
+// an empty placeholder or red "add slot ID" warning.
 
-/** 728×90 leaderboard */
+/** 728×90 leaderboard — falls back to ThinkingLenz brand banner */
 export function LeaderboardAd({ className = "" }: { className?: string }) {
+  if (!IS_DEV && !SLOT_LB) {
+    return <ThinkingLenzBanner size="leaderboard" className={className} />;
+  }
   return (
     <div className={`w-full bg-gray-50 border-y border-gray-100 py-2 ${className}`}>
       <p className="text-[10px] text-center text-gray-400 mb-1 uppercase tracking-wider">Advertisement</p>
@@ -63,8 +72,11 @@ export function LeaderboardAd({ className = "" }: { className?: string }) {
   );
 }
 
-/** 300×250 sidebar rectangle */
+/** 300×250 sidebar rectangle — falls back to ListMyAI brand banner */
 export function SidebarAd({ className = "" }: { className?: string }) {
+  if (!IS_DEV && !SLOT_SB) {
+    return <ListMyAIBanner size="sidebar" className={className} />;
+  }
   return (
     <div className={className}>
       <p className="text-[10px] text-center text-gray-400 mb-1 uppercase tracking-wider">Advertisement</p>
@@ -73,8 +85,15 @@ export function SidebarAd({ className = "" }: { className?: string }) {
   );
 }
 
-/** In-feed — auto height */
+/** In-feed — auto height; falls back to ThinkingLenz horizontal in feed */
 export function InFeedAd({ className = "" }: { className?: string }) {
+  if (!IS_DEV && !SLOT_IF) {
+    return (
+      <div className={`col-span-full ${className}`}>
+        <ThinkingLenzBanner size="leaderboard" />
+      </div>
+    );
+  }
   return (
     <div className={`col-span-full ${className}`}>
       <p className="text-[10px] text-center text-gray-400 mb-1 uppercase tracking-wider">Advertisement</p>
