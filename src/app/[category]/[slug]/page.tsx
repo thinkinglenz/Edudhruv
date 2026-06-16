@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
@@ -79,7 +79,14 @@ export default async function PostPage({
   params: { category: string; slug: string };
 }) {
   const post = await getPostBySlug(params.slug);
-  if (!post || post.category_slug !== params.category) notFound();
+  if (!post) notFound();
+  // Post exists but was requested under the wrong category prefix (e.g. a
+  // legacy /latest/{slug} or /news/{slug} URL for a post that now lives in a
+  // different category). 301 to its canonical URL instead of 404 — preserves
+  // SEO and fixes GSC "Not found" errors for old WordPress URL structures.
+  if (post.category_slug !== params.category) {
+    permanentRedirect(`/${post.category_slug}/${post.slug}`);
+  }
 
   const cat     = getCategoryBySlug(post.category_slug);
   const related = await getRelatedPosts(post.category_slug, post.slug, 3);
