@@ -10,5 +10,5 @@ export const dynamic = "force-dynamic";
 
 export default async function LegacyLatestSlug({ params }: { params: { slug: string } }) {
   await redirectToCanonicalOrNotFound(params.slug);
-  return null; // unreachable — redirect or notFound throws
+  return null;
 }
