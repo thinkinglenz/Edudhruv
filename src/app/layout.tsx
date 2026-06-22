@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     images: [{ url: "/logo.jpg", width: 300, height: 80, alt: "EduDhruv" }],
   },
   twitter: { card: "summary_large_image" },
-  // Site ownership verifications for Google Search Console & AdSense.
+  // Site ownership verifications for Google Search Console, AdSense, & Facebook Business.
   // Both can use the same content meta tag if "google-site-verification" is set.
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
@@ -32,6 +32,8 @@ export const metadata: Metadata = {
       ...(process.env.NEXT_PUBLIC_ADSENSE_VERIFICATION && {
         "google-adsense-account": process.env.NEXT_PUBLIC_ADSENSE_VERIFICATION,
       }),
+      // Facebook domain verification — required for Pixel + Business Manager
+      "facebook-domain-verification": "qpvs9db62boze4txyki2x4fjga4sju",
     },
   },
 };
