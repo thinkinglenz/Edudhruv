@@ -59,13 +59,19 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: {
         "x-api-key": ANTHROPIC_KEY,
-        "anthropic-version": "2023-06-01",
+        "anthropic-version": "2024-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: MODEL,
         max_tokens: 1024,
-        system: SYSTEM_PROMPT,
+        system: [
+          {
+            type: "text",
+            text: SYSTEM_PROMPT,
+            cache_control: { type: "ephemeral" },
+          },
+        ],
         messages: [{ role: "user", content: userPrompt }],
       }),
     });

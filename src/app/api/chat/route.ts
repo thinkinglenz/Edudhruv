@@ -35,12 +35,18 @@ export async function POST(req: NextRequest) {
       headers: {
         "Content-Type": "application/json",
         "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+        "anthropic-version": "2024-06-01",
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 300,
-        system: PRIYA_SYSTEM,
+        system: [
+          {
+            type: "text",
+            text: PRIYA_SYSTEM,
+            cache_control: { type: "ephemeral" },
+          },
+        ],
         messages: messages.slice(-10), // last 10 messages for context
       }),
     });
