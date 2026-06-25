@@ -107,6 +107,18 @@ const nextConfig = {
     ];
   },
 
+  async rewrites() {
+    return {
+      beforeFiles: [
+        // Serve AMP pages at /amp/* routes
+        {
+          source: "/amp/:path*",
+          destination: "/amp/:path*",
+        },
+      ],
+    };
+  },
+
   async redirects() {
     return [
       // ─── Legacy WordPress page slugs → clean new URLs ───────────
