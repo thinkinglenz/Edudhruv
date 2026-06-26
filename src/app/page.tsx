@@ -26,7 +26,7 @@ const HOMEPAGE_CATEGORIES = [
 
 export default async function HomePage() {
   const [recentPosts, categoryPosts, scholarships] = await Promise.all([
-    getRecentPosts(8),
+    getRecentPosts(9),
     getPostsByCategoryMap(HOMEPAGE_CATEGORIES, 4),
     getRecentScholarships(6),
   ]);
