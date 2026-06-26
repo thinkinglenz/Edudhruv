@@ -1,32 +1,16 @@
-// AMP (Accelerated Mobile Pages) custom element type declarations
-// Allows TypeScript to recognize AMP-specific HTML elements
+// AMP (Accelerated Mobile Pages) custom element type declarations.
+//
+// IMPORTANT: do NOT add a top-level `import` or `export` to this file.
+// Doing so turns it into a module, which makes the `JSX` namespace
+// augmentation below LOCAL (and silently ignored). Keeping it a plain
+// ambient script file lets it augment the GLOBAL JSX namespace so all
+// `amp-*` elements are recognized across the app.
 
 declare namespace JSX {
   interface IntrinsicElements {
-    'amp-auto-ads': {
-      type?: string;
-      'data-ad-client'?: string;
-      children?: React.ReactNode;
-    };
-    'amp-img': {
-      src?: string;
-      alt?: string;
-      width?: string | number;
-      height?: string | number;
-      layout?: string;
-      className?: string;
-    };
-    'amp-sidebar': {
-      id?: string;
-      layout?: string;
-      side?: string;
-      children?: React.ReactNode;
-    };
-    'amp-analytics': {
-      type?: string;
-      children?: React.ReactNode;
-    };
+    "amp-auto-ads": any;
+    "amp-img": any;
+    "amp-sidebar": any;
+    "amp-analytics": any;
   }
 }
-
-export {};
