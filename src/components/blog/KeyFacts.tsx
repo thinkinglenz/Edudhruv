@@ -120,9 +120,9 @@ export default function KeyFacts({ scholarship: s }: Props) {
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="px-5 py-3 grid grid-cols-[140px_1fr] gap-3 items-start sm:items-center text-sm">
+    <div className="px-5 py-3 grid grid-cols-[120px_minmax(0,1fr)] sm:grid-cols-[140px_minmax(0,1fr)] gap-3 items-start sm:items-center text-sm">
       <dt className="text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</dt>
-      <dd className="text-gray-800 m-0">{value}</dd>
+      <dd className="text-gray-800 m-0 min-w-0 break-words">{value}</dd>
     </div>
   );
 }

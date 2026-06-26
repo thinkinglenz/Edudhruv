@@ -132,9 +132,9 @@ export default async function PostPage({
       <ReadingProgress />
       <FloatingShareBar url={fullUrl} title={post.title} slug={post.slug} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-10">
         {/* Main article */}
-        <article>
+        <article className="min-w-0">
           {/* Breadcrumb */}
           <nav className="text-sm text-gray-400 mb-5">
             <Link href="/" className="hover:text-brand">Home</Link>
