@@ -39,7 +39,7 @@ export default async function HomePage() {
       <HeroBanner posts={heroPosts} sponsored={SPONSORED_SLIDES} />
 
       {/* ── Main content + RHS sidebar ─────────────────────────────── */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-0">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8 items-start">
 
           {/* ── Left: Latest Articles + filler banner ─────────────── */}
