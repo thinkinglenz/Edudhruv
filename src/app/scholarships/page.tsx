@@ -25,13 +25,15 @@ function brandColor(name: string): string {
 export default async function ScholarshipsIndexPage() {
   const all = await getActiveScholarships();
 
-  // Group by country for visual organisation
-  const byCountry: Record<string, typeof all> = {};
+  // ── Group by UNIVERSITY — university is the hero of each section ──
+  const byUniversity: Record<string, typeof all> = {};
   for (const s of all) {
-    if (!byCountry[s.country]) byCountry[s.country] = [];
-    byCountry[s.country].push(s);
+    if (!byUniversity[s.university_name]) byUniversity[s.university_name] = [];
+    byUniversity[s.university_name].push(s);
   }
-  const countries = Object.keys(byCountry).sort();
+  // Sort universities alphabetically; keeps a stable, scannable order.
+  const universities = Object.keys(byUniversity).sort((a, b) => a.localeCompare(b));
+  const countryCount = new Set(all.map(s => s.country)).size;
 
   return (
     <div>
@@ -49,8 +51,8 @@ export default async function ScholarshipsIndexPage() {
             <span className="text-white/90">For Indian Students Worldwide</span>
           </h1>
           <p className="text-base sm:text-lg text-white/85">
-            <strong>{all.length}+ active scholarships</strong> across {countries.length} countries,
-            verified daily from official university sources.
+            <strong>{all.length}+ active scholarships</strong> at {universities.length} top universities
+            across {countryCount} countries, verified daily from official sources.
           </p>
         </div>
       </section>
@@ -74,55 +76,104 @@ export default async function ScholarshipsIndexPage() {
           {/* Stats strip */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Stat icon="🎓" value={`${all.length}+`}    label="Active scholarships" />
-            <Stat icon="🌍" value={countries.length}    label="Countries" />
+            <Stat icon="🏛️" value={universities.length} label="Universities" />
             <Stat icon="💯" value="100%"                 label="Fully funded" />
             <Stat icon="🇮🇳" value="Indian"              label="Students eligible" />
           </div>
 
-          {/* By country */}
-          {countries.map(country => (
-            <section key={country}>
-              <h2 className="flex items-center gap-3 text-2xl font-extrabold text-gray-900 mb-5 pb-3 border-b-2"
-                  style={{ borderColor: "#3AAFE5" }}>
-                <span className="text-3xl">{getCountryFlag(country)}</span>
-                {country}
-                <span className="text-base font-normal text-gray-400">
-                  ({byCountry[country].length} scholarship{byCountry[country].length !== 1 ? "s" : ""})
-                </span>
-              </h2>
+          {/* ── By university — university name is the heading & hero ── */}
+          {universities.map(university => {
+            const rows = byUniversity[university];
+            const country = rows[0].country;
+            const color = brandColor(university);
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {byCountry[country].map(s => {
-                  const days = daysUntil(s.application_deadline);
-                  const urgent = days !== null && days >= 0 && days <= 30;
-                  const expired = days !== null && days < 0;
-                  const color = brandColor(s.university_name);
-                  const href = s.post_slug ? `/scholarship/${s.post_slug}` : "#";
+            return (
+              <section key={university}>
+                {/* University heading — the hero of this section */}
+                <div className="mb-5 pb-3 border-b-2" style={{ borderColor: color }}>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span
+                      className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-white text-base font-extrabold shadow-sm"
+                      style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}
+                    >
+                      {getInitials(university)}
+                    </span>
+                    <div className="min-w-0">
+                      <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-tight">
+                        {university}
+                      </h2>
+                      <p className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                        <span>{getCountryFlag(country)} {country}</span>
+                        <span className="text-gray-300">·</span>
+                        <span>{rows.length} scholarship{rows.length !== 1 ? "s" : ""}</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-                  return (
-                    <Link key={s.id} href={href}
-                      className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all">
-                      <div className="h-24 flex items-center justify-center relative"
-                           style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}>
-                        <div className="text-white text-3xl font-extrabold drop-shadow">
-                          {getInitials(s.university_name)}
+                {/* Scholarship cards for this university */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {rows.map(s => {
+                    const days = daysUntil(s.application_deadline);
+                    const urgent = days !== null && days >= 0 && days <= 30;
+                    const expired = days !== null && days < 0;
+                    const href = s.post_slug ? `/scholarship/${s.post_slug}` : "#";
+                    const courses = (s.courses_covered || []).slice(0, 3);
+
+                    return (
+                      <Link key={s.id} href={href}
+                        className="group flex flex-col bg-white rounded-2xl border border-gray-100 p-5 hover:shadow-lg hover:border-gray-200 transition-all">
+                        {/* Badges */}
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full"
+                                style={{ background: "#FEF3E2", color: "#F5A71A" }}>
+                            💯 FULLY FUNDED
+                          </span>
+                          {s.coverage_percentage > 0 && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-50 text-green-600">
+                              {s.coverage_percentage}% coverage
+                            </span>
+                          )}
                         </div>
-                        <span className="absolute top-2 right-2 bg-white text-[10px] font-extrabold px-2 py-0.5 rounded-full"
-                              style={{ color: "#F5A71A" }}>
-                          💯 FULLY FUNDED
-                        </span>
-                      </div>
-                      <div className="p-5">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
-                          {s.university_name}
-                        </p>
-                        <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-brand">
+
+                        {/* Scholarship name */}
+                        <h3 className="font-bold text-lg text-gray-900 mb-2 leading-snug group-hover:text-brand">
                           {s.scholarship_name}
                         </h3>
-                        {s.amount_inr && <p className="text-sm text-gray-700 mb-2">💰 {s.amount_inr}</p>}
-                        <div className="flex items-center justify-between text-xs pt-2 border-t border-gray-100 mt-2">
-                          <span className={`font-bold ${expired ? "text-gray-400 line-through" : urgent ? "text-red-500" : "text-gray-700"}`}>
-                            {formatDeadline(s.application_deadline)}
+
+                        {/* Amount */}
+                        {s.amount_inr && (
+                          <p className="text-sm font-semibold text-gray-800 mb-2 flex items-start gap-1.5">
+                            <span>💰</span>
+                            <span>{s.amount_inr}</span>
+                          </p>
+                        )}
+
+                        {/* Eligibility */}
+                        {s.eligibility_summary && (
+                          <p className="text-sm text-gray-500 mb-3 line-clamp-2">
+                            {s.eligibility_summary}
+                          </p>
+                        )}
+
+                        {/* Course chips */}
+                        {courses.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-3">
+                            {courses.map((c, i) => (
+                              <span key={i} className="text-[11px] px-2 py-0.5 rounded-md bg-gray-50 text-gray-600 border border-gray-100">
+                                {c}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Footer: deadline + intake + days left */}
+                        <div className="flex items-center justify-between text-xs pt-3 border-t border-gray-100 mt-auto">
+                          <span className="flex items-center gap-2">
+                            <span className={`font-bold ${expired ? "text-gray-400 line-through" : urgent ? "text-red-500" : "text-gray-700"}`}>
+                              {formatDeadline(s.application_deadline)}
+                            </span>
+                            {s.intake && <span className="text-gray-400">· {s.intake}</span>}
                           </span>
                           {days !== null && days >= 0 && (
                             <span className={`px-2 py-0.5 rounded-lg font-bold ${urgent ? "bg-red-50 text-red-600" : "bg-blue-50"}`}
@@ -131,13 +182,13 @@ export default async function ScholarshipsIndexPage() {
                             </span>
                           )}
                         </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })}
         </div>
       )}
 
