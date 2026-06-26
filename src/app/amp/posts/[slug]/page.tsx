@@ -119,6 +119,7 @@ export default async function AmpPostPage({ params }: AmpPostPageProps) {
       </head>
       <body>
         {/* Google AdSense Auto Ads */}
+        {/* @ts-ignore - AMP custom element */}
         <amp-auto-ads type="adsense" data-ad-client="ca-pub-8001713028154145" />
 
         {/* Header */}
