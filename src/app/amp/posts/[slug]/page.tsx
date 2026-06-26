@@ -43,6 +43,7 @@ export default async function AmpPostPage({ params }: AmpPostPageProps) {
   const ampUrl = `https://www.edudhruv.com/amp/posts/${post.slug}`;
 
   return (
+    // @ts-ignore - AMP pages use non-standard HTML elements
     <html lang="en">
       <head>
         <meta charSet="utf-8" />
