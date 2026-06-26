@@ -43,7 +43,7 @@ export default async function AmpPostPage({ params }: AmpPostPageProps) {
   const ampUrl = `https://www.edudhruv.com/amp/posts/${post.slug}`;
 
   return (
-    <html ⚡ lang="en">
+    <html lang="en">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1" />
