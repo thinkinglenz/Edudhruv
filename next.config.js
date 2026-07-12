@@ -25,6 +25,26 @@ const nextConfig = {
       { protocol: "https", hostname: "ethz.ch" },          // ETH Zurich
       { protocol: "https", hostname: "**.ethz.ch" },
       { protocol: "https", hostname: "**.epfl.ch" },       // EPFL
+
+      // Broader university country TLDs — backstop for scholarship-agent
+      // og:images so a new country's university doesn't render a broken image.
+      // (The agent now prefers Wikimedia/Unsplash, but this covers the rest.)
+      { protocol: "https", hostname: "**.nl" },            // Netherlands (uva.nl, tudelft.nl, ...)
+      { protocol: "https", hostname: "**.de" },            // Germany
+      { protocol: "https", hostname: "**.fr" },            // France
+      { protocol: "https", hostname: "**.se" },            // Sweden
+      { protocol: "https", hostname: "**.dk" },            // Denmark
+      { protocol: "https", hostname: "**.no" },            // Norway
+      { protocol: "https", hostname: "**.fi" },            // Finland
+      { protocol: "https", hostname: "**.ie" },            // Ireland
+      { protocol: "https", hostname: "**.it" },            // Italy
+      { protocol: "https", hostname: "**.es" },            // Spain
+      { protocol: "https", hostname: "**.ch" },            // Switzerland (beyond ETH/EPFL)
+      { protocol: "https", hostname: "**.at" },            // Austria
+      { protocol: "https", hostname: "**.be" },            // Belgium
+      { protocol: "https", hostname: "**.ca" },            // Canada (beyond the 3 above)
+      { protocol: "https", hostname: "**.ac.nz" },         // New Zealand universities
+      { protocol: "https", hostname: "**.edu.my" },        // Malaysia
     ],
   },
 

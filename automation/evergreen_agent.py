@@ -298,6 +298,33 @@ def claude_structured(system: str, user: str, tool_schema: dict) -> dict:
     raise last_error or ValueError("No working model found")
 
 
+# ─── FALLBACK IMAGES ──────────────────────────────────────────────────────
+# Unsplash's random API is rate-limited (~50/hr on the free tier) and fails
+# intermittently. When it does, we used to publish a post with NO image, which
+# renders as a blank card on the homepage. These per-category fallbacks are
+# stable images.unsplash.com URLs (already allowlisted in next.config.js) so a
+# post is NEVER published image-less. Verified HTTP 200 on 2026-07-XX.
+FALLBACK_IMAGES: dict[str, str] = {
+    "indian-students-abroad": "https://images.unsplash.com/photo-1523240795612-9a054b0db644",
+    "top-universities":       "https://images.unsplash.com/photo-1566835745069-cebca4b64ce3",
+    "scholarship":            "https://images.unsplash.com/photo-1659080922487-37b15f9dba67",
+    "education-loan":         "https://images.unsplash.com/photo-1697478444764-1e17e7ed364d",
+    "student-accommodation":  "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267",
+    "travel-essentials":      "https://images.unsplash.com/photo-1436491865332-7a61a109cc05",
+}
+FALLBACK_DEFAULT = "https://images.unsplash.com/photo-1521587760476-6c12a4b040da"  # library/study
+
+
+def fallback_image(category_slug: str, topic: str) -> dict:
+    """Guaranteed non-null image when Unsplash fails — keyed by category."""
+    base = FALLBACK_IMAGES.get(category_slug, FALLBACK_DEFAULT)
+    return {
+        "url": f"{base}?w=1200&h=630&fit=crop&q=75",
+        "alt": topic,
+        "credit": '<a href="https://unsplash.com?utm_source=edudhruv&utm_medium=referral" target="_blank" rel="noopener">Unsplash</a>',
+    }
+
+
 def unsplash_image(query: str) -> dict | None:
     if not UNSPLASH_KEY:
         return None
@@ -683,12 +710,14 @@ def main():
     log.info(f"Category: {category_slug}")
     log.info(f"Topic: {topic}")
 
-    # Get image
+    # Get image — Unsplash first, then a guaranteed category fallback so a
+    # post is never published with a blank card.
     image = unsplash_image(topic)
     if image:
         log.info(f"Image: {image['url']}")
     else:
-        log.info("No image (no Unsplash key or API error)")
+        image = fallback_image(category_slug, topic)
+        log.info(f"Unsplash unavailable — using category fallback: {image['url']}")
 
     # Generate content + publish — retry up to 3 times if slug collides
     MAX_TRIES = 3

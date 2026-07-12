@@ -594,24 +594,33 @@ def get_university_image(university: dict) -> dict | None:
         c = CURATED_IMAGES[name]
         return {"url": c["url"], "alt": f"{name} campus", "credit": c["credit"]}
 
-    # 2. Official website og:image
-    img = website_og_image(university.get("official_website", ""), name)
-    if img:
-        return img
+    # ORDER CHANGED 2026-07-XX: reliable, ALLOWLISTED sources first.
+    # The university's own og:image can live on ANY domain (e.g. uva.nl),
+    # which Next.js <Image> refuses to render unless that exact domain is in
+    # next.config.js images.remotePatterns — an endless whack-a-mole that left
+    # posts showing a broken-image icon. Wikimedia (upload.wikimedia.org) and
+    # Unsplash (images.unsplash.com) are already allowlisted and reliable, so
+    # we prefer them. The website og:image is now a later fallback.
 
-    # 3. Wikimedia Commons strict search
+    # 2. Wikimedia Commons strict search (allowlisted, authentic campus photos)
     log.info(f"  Searching Wikimedia Commons for {name}...")
     for q in [f"{name} campus aerial", f"{name} campus", f"{name} main building", name]:
         img = wikimedia_commons_image(q, university_name=name)
         if img:
             return img
 
-    # 4. Wikipedia pageimage (often a seal but worth trying)
+    # 3. Wikipedia pageimage (allowlisted; often a seal but worth trying)
     img = wikipedia_main_image(name)
     if img:
         return img
 
-    # 5. Unsplash fallback
+    # 4. Official website og:image (may be on a non-allowlisted domain — used
+    #    only if the reliable sources above found nothing)
+    img = website_og_image(university.get("official_website", ""), name)
+    if img:
+        return img
+
+    # 5. Unsplash fallback (allowlisted)
     log.info(f"  Falling back to Unsplash for {name}")
     return unsplash_image(f"{name} {country}")
 
