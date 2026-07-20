@@ -10,9 +10,13 @@ on:
   workflow_dispatch:
     inputs:
       model:
-        description: "Claude model (optional override)"
+        description: "Claude model override — dropdown only, no free text, so Opus can't be typed in by accident"
         required: false
         default: "claude-haiku-4-5"
+        type: choice
+        options:
+          - "claude-haiku-4-5"
+          - "claude-3-5-haiku-20241022"
 
 jobs:
   publish:

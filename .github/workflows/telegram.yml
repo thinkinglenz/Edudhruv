@@ -5,9 +5,14 @@ name: Telegram Scholarship Broadcaster
 # (committed back to repo) so we only send genuinely new entries.
 
 on:
-  schedule:
-    - cron: "15 */6 * * *"      # Every 6 hours at :15
-  workflow_dispatch: {}          # Allow manual trigger from Actions tab
+  # DISABLED 2026-07-01 — Telegram channel never went live. Schedule commented
+  # out so it stops running (and stops committing state every 6 hours).
+  # Re-enable by uncommenting the schedule below. NOTE: this workflow does NOT
+  # call Claude — it only reads Supabase + posts to Telegram, so it has never
+  # cost any Anthropic API credits.
+  # schedule:
+  #   - cron: "15 */6 * * *"      # Every 6 hours at :15
+  workflow_dispatch: {}          # Manual-only trigger from the Actions tab
 
 jobs:
   broadcast:

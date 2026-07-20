@@ -1,15 +1,22 @@
 name: Scholarship Discovery Agent
 
 on:
-  # Daily at 00:30 UTC (06:00 IST) — best time before India workday
+  # Cost optimization (2026-07-01): was daily; now every 3 days at 00:30 UTC
+  # (06:00 IST). This agent uses Sonnet 4.5 + web search — the priciest run —
+  # and scholarship deadlines are months out, so daily discovery isn't needed.
+  # ~66% cheaper than daily. Revert to "30 0 * * *" for daily.
   schedule:
-    - cron: "30 0 * * *"
+    - cron: "30 0 */3 * *"
   workflow_dispatch:
     inputs:
       model:
-        description: "Claude model — needs Sonnet+ for web_search"
+        description: "Claude model override — dropdown only (needs Sonnet+ for web_search; Opus deliberately excluded, it's ~5x pricier for no discovery benefit here)"
         required: false
         default: "claude-sonnet-4-5"
+        type: choice
+        options:
+          - "claude-sonnet-4-5"
+          - "claude-sonnet-4-6"
 
 jobs:
   discover:
