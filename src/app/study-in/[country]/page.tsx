@@ -40,9 +40,11 @@ export async function generateMetadata({ params }: { params: { country: string }
       description: c.metaDescription,
       url,
       type:        "article",
-      images:      ["/logo.jpg"],
+      // logo.jpg is 265x90 — below LinkedIn's 200x200 minimum, so link
+      // previews rendered with no image. Use the 1200x630 branded card.
+      images:      [{ url: "/og-default.jpg", width: 1200, height: 630, alt: c.metaTitle }],
     },
-    twitter: { card: "summary_large_image" },
+    twitter: { card: "summary_large_image", images: ["/og-default.jpg"] },
   };
 }
 

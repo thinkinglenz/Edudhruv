@@ -20,7 +20,12 @@ export const metadata: Metadata = {
   icons: { icon: "/favicon.jpg", shortcut: "/favicon.jpg", apple: "/favicon.jpg" },
   openGraph: {
     siteName: "EduDhruv", locale: "en_IN", type: "website",
-    images: [{ url: "/logo.jpg", width: 300, height: 80, alt: "EduDhruv" }],
+    // Social preview image. MUST be >= 200x200 (LinkedIn) — the raw logo.jpg
+    // is only 265x90, which LinkedIn/Facebook reject outright, so link posts
+    // rendered with NO preview card at all. og-default.jpg is a 1200x630
+    // branded card (logo + tagline) at the size every platform expects.
+    // Individual posts override this with their own featured_image_url.
+    images: [{ url: "/og-default.jpg", width: 1200, height: 630, alt: "EduDhruv — Study Abroad Guidance for Indian Students" }],
   },
   twitter: { card: "summary_large_image" },
   // Site ownership verifications for Google Search Console, AdSense, & Facebook Business.
