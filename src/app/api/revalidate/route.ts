@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { pingIndexNow } from "@/lib/indexnow";
+import { notifyGoogleIndexing, isGoogleIndexingConfigured } from "@/lib/google-indexing";
+
+// Node runtime required — the Google Indexing helper signs a JWT with the
+// built-in `crypto` module (not available on the Edge runtime).
+export const runtime = "nodejs";
 
 /**
  * On-demand cache revalidation.
@@ -60,18 +65,25 @@ export async function POST(req: NextRequest) {
     // Submit to IndexNow (Bing/Yandex) so the new URL gets indexed in hours
     // not days. Only ping for new content (when a slug is provided).
     let indexnowSent = false;
+    let googleIndexingSent = false;
     if (slug && category) {
       const postUrl = `https://www.edudhruv.com/${category}/${slug}`;
-      // Don't await — fire and forget so this never blocks the response
+      // Don't await — fire and forget so this never blocks the response.
+      // IndexNow → Bing/Yandex/Seznam (Google does NOT read IndexNow).
       pingIndexNow([postUrl, `https://www.edudhruv.com/${category}`, "https://www.edudhruv.com/"])
         .catch(() => {});
       indexnowSent = true;
+      // Google Indexing API → requests a Google crawl of the new post.
+      // No-op unless GOOGLE_INDEXING_SA_KEY is configured.
+      notifyGoogleIndexing(postUrl, "URL_UPDATED").catch(() => {});
+      googleIndexingSent = isGoogleIndexingConfigured();
     }
 
     return NextResponse.json({
       success: true,
       revalidated,
       indexnowSent,
+      googleIndexingSent,
       timestamp: new Date().toISOString(),
     });
 
