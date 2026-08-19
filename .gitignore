@@ -84,3 +84,6 @@ automation/venv/
 # ─── Local testing artifacts ───────────────────────────
 /tmp
 *.tmp
+
+# Local-only content-prune restore backups (never commit — contain post data)
+automation/.prune-backup-*.json
