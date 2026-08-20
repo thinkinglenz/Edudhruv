@@ -365,19 +365,35 @@ def get_used_topics() -> dict[str, list[str]]:
 
 def pick_topic(cycle: int, used: dict[str, list[str]]) -> tuple[str, str]:
     category = CYCLE_ORDER[cycle % len(CYCLE_ORDER)]
-    # Substitute {YEAR} placeholder so topics always reference the next intake
-    all_topics = [t.format(YEAR=YEAR, YEAR_PREV=YEAR_PREV) for t in TOPICS[category]]
     done = used.get(category, [])
-    # Strip year from comparison so we don't re-pick "Chevening 2026" after publishing
-    # the same topic for 2025. Compare base form (without year).
+    # Strip year from comparison so we don't re-pick "Chevening 2026" after
+    # publishing the same topic for 2025. Compare base form (without year).
     import re as _re
     def base(t: str) -> str:
-        return _re.sub(r"\s+\d{4}", "", t).strip()
+        return _re.sub(r"\s+\d{4}", "", t).strip().lower()
     done_bases = {base(t) for t in done}
+
+    # 1. TREND-INFORMED long-tail keywords (real Google Autocomplete searches).
+    #    Specific + lower-competition = what a young site can actually rank for.
+    #    Falls through to the hardcoded topic bank if discovery returns nothing.
+    try:
+        from trends import discover_longtail_topics
+        longtail = discover_longtail_topics(category)
+        fresh = [t for t in longtail if base(t) not in done_bases]
+        if fresh:
+            choice = random.choice(fresh)
+            log.info(f"Topic source: long-tail autocomplete — '{choice}'")
+            return category, choice
+    except Exception as e:
+        log.warning(f"Long-tail discovery unavailable, using topic bank: {e}")
+
+    # 2. FALLBACK: hardcoded topic bank
+    all_topics = [t.format(YEAR=YEAR, YEAR_PREV=YEAR_PREV) for t in TOPICS[category]]
     available = [t for t in all_topics if base(t) not in done_bases]
     if not available:
         log.info(f"All topics used for {category}, resetting")
         available = all_topics
+    log.info("Topic source: topic bank")
     return category, random.choice(available)
 
 
