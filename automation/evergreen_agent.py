@@ -363,38 +363,50 @@ def get_used_topics() -> dict[str, list[str]]:
         return {}
 
 
-def pick_topic(cycle: int, used: dict[str, list[str]]) -> tuple[str, str]:
-    category = CYCLE_ORDER[cycle % len(CYCLE_ORDER)]
-    done = used.get(category, [])
-    # Strip year from comparison so we don't re-pick "Chevening 2026" after
-    # publishing the same topic for 2025. Compare base form (without year).
+def pick_topic(cycle: int, used: dict[str, list[str]]) -> tuple[str | None, str | None]:
+    """
+    Find a genuinely NOVEL topic to write about. Returns (category, topic), or
+    (None, None) when every category is saturated (the whole site already
+    covers the available topics) — in which case the caller should skip the
+    run rather than generate near-duplicate content.
+
+    Candidates per category, in order: trend-informed long-tail keywords (real
+    Google Autocomplete searches — specific + rankable), then the hardcoded
+    topic bank. Each candidate is novelty-checked BEFORE returning, so we never
+    pay Claude to generate a post that would just collide.
+    """
     import re as _re
     def base(t: str) -> str:
         return _re.sub(r"\s+\d{4}", "", t).strip().lower()
-    done_bases = {base(t) for t in done}
 
-    # 1. TREND-INFORMED long-tail keywords (real Google Autocomplete searches).
-    #    Specific + lower-competition = what a young site can actually rank for.
-    #    Falls through to the hardcoded topic bank if discovery returns nothing.
-    try:
-        from trends import discover_longtail_topics
-        longtail = discover_longtail_topics(category)
-        fresh = [t for t in longtail if base(t) not in done_bases]
-        if fresh:
-            choice = random.choice(fresh)
-            log.info(f"Topic source: long-tail autocomplete — '{choice}'")
-            return category, choice
-    except Exception as e:
-        log.warning(f"Long-tail discovery unavailable, using topic bank: {e}")
+    n = len(CYCLE_ORDER)
+    for offset in range(n):                       # try every category, cycle-first
+        category = CYCLE_ORDER[(cycle + offset) % n]
+        done_bases = {base(t) for t in used.get(category, [])}
 
-    # 2. FALLBACK: hardcoded topic bank
-    all_topics = [t.format(YEAR=YEAR, YEAR_PREV=YEAR_PREV) for t in TOPICS[category]]
-    available = [t for t in all_topics if base(t) not in done_bases]
-    if not available:
-        log.info(f"All topics used for {category}, resetting")
-        available = all_topics
-    log.info("Topic source: topic bank")
-    return category, random.choice(available)
+        candidates: list[str] = []
+        # 1. Long-tail keywords (fresh, specific, real searches)
+        try:
+            from trends import discover_longtail_topics
+            candidates += [t for t in discover_longtail_topics(category)
+                           if base(t) not in done_bases]
+        except Exception as e:
+            log.warning(f"Long-tail discovery unavailable for {category}: {e}")
+        # 2. Hardcoded topic bank
+        bank = [t.format(YEAR=YEAR, YEAR_PREV=YEAR_PREV) for t in TOPICS[category]]
+        candidates += [t for t in bank if base(t) not in done_bases]
+
+        # Return the first genuinely novel candidate (won't collide with an
+        # existing post). Cap the checks so a saturated category can't fan out
+        # into hundreds of DB lookups.
+        random.shuffle(candidates)
+        for t in candidates[:20]:
+            if topic_is_novel(t):
+                log.info(f"Category: {category} — novel topic found: '{t}'")
+                return category, t
+        log.info(f"{category}: no novel topic (already well covered) — trying next category")
+
+    return None, None
 
 
 def get_current_cycle() -> int:
@@ -576,6 +588,32 @@ def slug_too_similar(slug: str, threshold: int = 5) -> bool:
         return False
 
 
+# Stopwords dropped when approximating Claude's slug from a raw topic, so the
+# novelty pre-check lines up with the slugs Claude actually produces.
+_SLUG_STOP = {"for", "in", "the", "to", "a", "an", "of", "and", "with",
+              "from", "your", "you", "how", "is", "are", "on", "at", "by"}
+
+
+def _slugify_topic(text: str) -> str:
+    """Approximate the slug Claude would generate for a topic (stopwords out)."""
+    import re as _re
+    words = _re.sub(r"[^a-z0-9\s]", " ", text.lower()).split()
+    return "-".join(w for w in words if w not in _SLUG_STOP)
+
+
+def topic_is_novel(topic: str) -> bool:
+    """
+    Cheap PRE-generation check: would writing about this topic just recreate a
+    post we already have? Approximates the final slug from the topic so we skip
+    doomed topics BEFORE paying Claude to generate. publish_post() remains the
+    exact backstop. Never weakens the duplicate guard — only avoids waste.
+    """
+    slug = _slugify_topic(topic)
+    if len(slug) < 15:
+        return True  # too short to judge — let it through, guard will catch
+    return not (slug_exists(slug) or slug_too_similar(slug))
+
+
 def publish_post(post_data: dict, category_slug: str, image: dict | None) -> dict:
     # Log what fields we actually got from Claude (helps diagnose missing data)
     log.info(f"  Claude returned keys: {sorted(post_data.keys())}")
@@ -708,10 +746,18 @@ def main():
         log.error(f"Missing environment variables: {', '.join(missing)}")
         raise SystemExit(1)
 
-    # Pick topic
+    # Pick a genuinely NOVEL topic (pre-filtered so we never pay Claude to
+    # generate a near-duplicate). None = the whole site already covers the
+    # available topics → skip cleanly instead of churning out duplicates.
     used = get_used_topics()
     cycle = get_current_cycle()
     category_slug, topic = pick_topic(cycle, used)
+
+    if not category_slug or not topic:
+        log.info("No novel topic available today — the site already covers the "
+                 "available topics. Skipping this run (this is NOT an error; "
+                 "quality > forcing a near-duplicate).")
+        return
 
     category_names = {
         "indian-students-abroad": "Indian Students Abroad",
@@ -723,7 +769,6 @@ def main():
     }
     category_name = category_names.get(category_slug, category_slug)
 
-    log.info(f"Category: {category_slug}")
     log.info(f"Topic: {topic}")
 
     # Get image — Unsplash first, then a guaranteed category fallback so a
@@ -735,29 +780,21 @@ def main():
         image = fallback_image(category_slug, topic)
         log.info(f"Unsplash unavailable — using category fallback: {image['url']}")
 
-    # Generate content + publish — retry up to 3 times if slug collides
-    MAX_TRIES = 3
-    result = None
-    for attempt in range(1, MAX_TRIES + 1):
-        log.info(f"Calling Claude to generate content... (attempt {attempt}/{MAX_TRIES})")
-        t0 = time.time()
-        post_data = generate_post(topic, category_name)
-        log.info(f"Content generated in {time.time()-t0:.1f}s — title: {post_data['title']}")
-        try:
-            result = publish_post(post_data, category_slug, image)
-            break
-        except ValueError as e:
-            if str(e).startswith("DUPLICATE_SLUG") and attempt < MAX_TRIES:
-                log.warning(f"  Duplicate slug — picking a different topic and retrying")
-                # Re-pick topic, excluding the one that just collided
-                used.setdefault(category_slug, []).append(topic)
-                category_slug, topic = pick_topic(cycle + attempt, used)
-                category_name = category_names.get(category_slug, category_slug)
-                continue
-            raise
-
-    if not result:
-        raise RuntimeError(f"Could not publish after {MAX_TRIES} attempts — all topics produced duplicate slugs")
+    # Generate once (the topic was already novelty-checked). publish_post()'s
+    # duplicate guard stays strict as a backstop — if Claude's actual slug
+    # still happens to collide, skip cleanly rather than crash.
+    log.info("Calling Claude to generate content...")
+    t0 = time.time()
+    post_data = generate_post(topic, category_name)
+    log.info(f"Content generated in {time.time()-t0:.1f}s — title: {post_data['title']}")
+    try:
+        result = publish_post(post_data, category_slug, image)
+    except ValueError as e:
+        if str(e).startswith("DUPLICATE_SLUG"):
+            log.info(f"Duplicate guard caught a near-duplicate after generation — "
+                     f"skipping cleanly (not an error): {e}")
+            return
+        raise
 
     post_slug = result.get("slug", post_data["slug"])
 
