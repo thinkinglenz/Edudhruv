@@ -379,6 +379,20 @@ def pick_topic(cycle: int, used: dict[str, list[str]]) -> tuple[str | None, str 
     def base(t: str) -> str:
         return _re.sub(r"\s+\d{4}", "", t).strip().lower()
 
+    # 0. TRENDING (opportunistic, timely): if a study-abroad topic is genuinely
+    #    trending TODAY across destination countries + India, write that — it's
+    #    timely and specific enough to rank. Usually empty (nothing relevant
+    #    trends), in which case we fall through to long-tail + bank below.
+    try:
+        from trends import trending_topics, trend_to_topic
+        for trend in trending_topics():
+            topic = trend_to_topic(trend)
+            if topic_is_novel(topic):
+                log.info(f"Category: indian-students-abroad — TRENDING topic: '{topic}'")
+                return "indian-students-abroad", topic
+    except Exception as e:
+        log.warning(f"Trending discovery unavailable: {e}")
+
     n = len(CYCLE_ORDER)
     for offset in range(n):                       # try every category, cycle-first
         category = CYCLE_ORDER[(cycle + offset) % n]

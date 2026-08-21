@@ -70,6 +70,70 @@ _SEEDS: dict[str, list[str]] = {
 }
 
 
+# ─── GOOGLE TRENDS (opportunistic, timely) ────────────────────────────────
+# Study-abroad DESTINATION countries + India (the source). Not "every country
+# on earth" — those are the geos whose education trends matter to an Indian
+# study-abroad audience. Each is one Google Trends daily-RSS request.
+_TREND_GEOS = ["IN", "US", "GB", "CA", "AU", "DE", "IE", "NZ", "SG", "NL", "FR"]
+
+# A trend only counts if it clearly relates to studying abroad — strict, so we
+# skip general noise ("college football", "school shooting", sports, movies).
+_TREND_RELEVANT = (
+    "student visa", "study abroad", "studying abroad", "study permit",
+    "scholarship", "university admission", "college admission", "study visa",
+    "ielts", "toefl", "gre", "gmat", "pte", "duolingo english", "sat exam",
+    "student loan", "education loan", "f-1 visa", "f1 visa", "graduate route",
+    "post study work", "opt visa", "stem opt", "express entry", "student permit",
+    "international student", "intake", "student housing", "tuition fee",
+)
+
+
+def _trends_rss(geo: str) -> list[str]:
+    """Return today's trending search terms for one country (empty on error)."""
+    try:
+        req = urllib.request.Request(
+            f"https://trends.google.com/trending/rss?geo={geo}",
+            headers={"User-Agent": "Mozilla/5.0 (compatible; EduDhruvBot/1.0)"},
+        )
+        with urllib.request.urlopen(req, timeout=12) as res:
+            xml = res.read().decode("utf-8", errors="replace")
+        import re as _re
+        # Each <item> has the trend term in its <title>; skip the channel title.
+        return _re.findall(r"<item>.*?<title>(.*?)</title>", xml, _re.S)
+    except Exception as e:
+        log.warning(f"trends RSS failed for {geo}: {e}")
+        return []
+
+
+def trending_topics(geos: list[str] | None = None, limit: int = 10) -> list[str]:
+    """
+    Study-abroad-relevant terms trending TODAY across destination countries.
+    Usually returns [] (most days nothing education-related trends) — that's
+    intended: it's an opportunistic bonus, not the primary topic source.
+    """
+    seen: set[str] = set()
+    out: list[str] = []
+    for geo in (geos or _TREND_GEOS):
+        for term in _trends_rss(geo):
+            low = term.strip().lower()
+            if low in seen or len(low) < 4:
+                continue
+            if not any(k in low for k in _TREND_RELEVANT):
+                continue
+            seen.add(low)
+            out.append(term.strip())
+            if len(out) >= limit:
+                return out
+    return out
+
+
+def trend_to_topic(trend: str) -> str:
+    """Frame a raw trending term into an on-brand, rankable blog topic."""
+    import datetime
+    year = datetime.datetime.now().year + 1
+    return f"{trend.strip().title()}: What Indian Students Planning to Study Abroad Should Know {year}"
+
+
 def _suggest(query: str) -> list[str]:
     """Hit Google autocomplete for one seed; return the raw suggestions."""
     try:
