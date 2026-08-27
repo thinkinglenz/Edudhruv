@@ -51,7 +51,10 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: "/(.*)",
+        // Everything EXCEPT /embed/* — embed widgets must be framable on
+        // other sites (that's how they earn backlinks), so they're excluded
+        // here and given a permissive frame policy in the next rule.
+        source: "/((?!embed).*)",
         headers: [
           // Clickjacking protection
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
@@ -68,6 +71,18 @@ const nextConfig = {
           // Cross-origin policies
           { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
           { key: "Cross-Origin-Embedder-Policy", value: "unsafe-none" },
+        ],
+      },
+      // ─── Embeddable widgets — framable on ANY site (backlink engine) ──────
+      // No X-Frame-Options; CSP frame-ancestors * explicitly allows all sites
+      // to iframe these. Keep the other security headers.
+      {
+        source: "/embed/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: "frame-ancestors *" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains; preload" },
         ],
       },
       // ads.txt served as plain text

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import EMICalculator from "@/components/tools/EMICalculator";
+import EmbedBox from "@/components/tools/EmbedBox";
 import { breadcrumbSchema } from "@/lib/seo-schemas";
 
 const URL = "https://www.edudhruv.com/tools/education-loan-emi-calculator";
@@ -103,6 +104,13 @@ export default function EMICalculatorPage() {
       </header>
 
       <EMICalculator />
+
+      <EmbedBox
+        embedUrl="https://www.edudhruv.com/embed/education-loan-emi-calculator"
+        toolUrl={URL}
+        title="Education Loan EMI Calculator"
+        height={900}
+      />
 
       {/* FAQ */}
       <section className="my-12">

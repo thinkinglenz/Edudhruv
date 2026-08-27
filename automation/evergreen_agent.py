@@ -379,19 +379,13 @@ def pick_topic(cycle: int, used: dict[str, list[str]]) -> tuple[str | None, str 
     def base(t: str) -> str:
         return _re.sub(r"\s+\d{4}", "", t).strip().lower()
 
-    # 0. TRENDING (opportunistic, timely): if a study-abroad topic is genuinely
-    #    trending TODAY across destination countries + India, write that — it's
-    #    timely and specific enough to rank. Usually empty (nothing relevant
-    #    trends), in which case we fall through to long-tail + bank below.
-    try:
-        from trends import trending_topics, trend_to_topic
-        for trend in trending_topics():
-            topic = trend_to_topic(trend)
-            if topic_is_novel(topic):
-                log.info(f"Category: indian-students-abroad — TRENDING topic: '{topic}'")
-                return "indian-students-abroad", topic
-    except Exception as e:
-        log.warning(f"Trending discovery unavailable: {e}")
+    # NOTE: A "trending topics" step was tried here (Google Trends RSS) and
+    # retired 2026-08-21. Verified across 3 tests that study-abroad/education
+    # topics essentially never appear in the daily trending feed (it's cricket,
+    # movies, politics), and when education DOES trend (exam results) it's
+    # hyper-competitive news a young site can't rank for. Traffic comes from
+    # steady high-volume SEARCH demand, not trending spikes — so we go straight
+    # to long-tail (real Google Autocomplete searches) + the topic bank below.
 
     n = len(CYCLE_ORDER)
     for offset in range(n):                       # try every category, cycle-first
