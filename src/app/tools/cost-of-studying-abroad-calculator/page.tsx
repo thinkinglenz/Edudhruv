@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import CostCalculator from "@/components/tools/CostCalculator";
+import EmbedBox from "@/components/tools/EmbedBox";
 import { breadcrumbSchema } from "@/lib/seo-schemas";
 
 const URL = "https://www.edudhruv.com/tools/cost-of-studying-abroad-calculator";
@@ -100,6 +101,13 @@ export default function CostCalculatorPage() {
       </header>
 
       <CostCalculator />
+
+      <EmbedBox
+        embedUrl="https://www.edudhruv.com/embed/cost-of-studying-abroad-calculator"
+        toolUrl={URL}
+        title="Cost of Studying Abroad Calculator"
+        height={950}
+      />
 
       <section className="my-12">
         <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-5">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import ROICalculator from "@/components/tools/ROICalculator";
+import EmbedBox from "@/components/tools/EmbedBox";
 import { breadcrumbSchema } from "@/lib/seo-schemas";
 
 const URL = "https://www.edudhruv.com/tools/study-abroad-roi-calculator";
@@ -83,6 +84,13 @@ export default function ROIPage() {
       </header>
 
       <ROICalculator />
+
+      <EmbedBox
+        embedUrl="https://www.edudhruv.com/embed/study-abroad-roi-calculator"
+        toolUrl={URL}
+        title="Study Abroad ROI Calculator"
+        height={950}
+      />
 
       <section className="my-12">
         <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-5">Frequently Asked Questions</h2>
