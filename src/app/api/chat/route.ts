@@ -35,10 +35,10 @@ export async function POST(req: NextRequest) {
       headers: {
         "Content-Type": "application/json",
         "x-api-key": apiKey,
-        "anthropic-version": "2024-06-01",
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model: "claude-haiku-4-5",
         max_tokens: 300,
         system: [
           {
@@ -52,9 +52,21 @@ export async function POST(req: NextRequest) {
     });
 
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message || "Claude API error");
+    if (!response.ok) {
+      const msg = data?.error?.message || "Claude API error";
+      console.error("Priya upstream error:", response.status, msg);
+      // Safe diagnostic hint (no secrets) so failures are debuggable
+      const hint = /credit|balance|quota|insufficient/i.test(msg) ? "billing"
+        : response.status === 401 ? "auth"
+        : response.status === 400 ? "bad_request"
+        : "upstream";
+      return NextResponse.json(
+        { error: "Priya is temporarily unavailable. Please try again shortly.", hint },
+        { status: 503 },
+      );
+    }
 
-    return NextResponse.json({ reply: data.content[0].text });
+    return NextResponse.json({ reply: data.content?.[0]?.text || "" });
   } catch (err) {
     console.error("Chat API error:", err);
     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
