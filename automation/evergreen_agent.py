@@ -479,7 +479,7 @@ POST_SCHEMA = {
         },
         "body": {
             "type": "string",
-            "description": f"REQUIRED — THE LONGEST FIELD BY FAR (must be 5000-8000 characters, ~1200-1600 words). This is the MAIN article body as a single HTML string. Structure: start with <h2>section heading</h2>, then 3-4 <p> paragraphs, repeat for 4-6 different sections covering different aspects of the topic. Use <ul><li>...</li></ul> for lists, <strong> for emphasis. End with <h2>Frequently Asked Questions</h2> followed by 4+ <h3>question</h3><p>answer</p> pairs. Include at least one internal link <a href=\"/education-loan/\">education loan</a>. Reference specific {YEAR}/{YEAR+1} data points (do NOT use {YEAR-2} or older). Do NOT include the intro paragraphs again — only the substantive body content AFTER the intro.",
+            "description": f"REQUIRED — THE LONGEST FIELD BY FAR (must be 5000-8000 characters, ~1200-1600 words). This is the MAIN article body as a single HTML string. Structure: start with <h2>section heading</h2>, then 3-4 <p> paragraphs, repeat for 4-6 different sections covering different aspects of the topic. Use <ul><li>...</li></ul> for lists, <strong> for emphasis. End with <h2>Frequently Asked Questions</h2> followed by 4+ <h3>question</h3><p>answer</p> pairs. Include at least one internal link, but ONLY to these exact real pages — NEVER invent other internal URLs and NEVER copy link paths from other websites: <a href=\"/best-education-loans\">best education loans</a>, <a href=\"/scholarships\">scholarships</a>, <a href=\"/tools/education-loan-emi-calculator\">EMI calculator</a>, or a category root such as <a href=\"/education-loan/\">education loan</a> or <a href=\"/scholarship/\">scholarships</a>. Any other internal link (e.g. /night, /apply-uk-visa, /en/academics) is INVALID. Reference specific {YEAR}/{YEAR+1} data points (do NOT use {YEAR-2} or older). Do NOT include the intro paragraphs again — only the substantive body content AFTER the intro.",
             "minLength": 4500,
         },
         "tags": {
@@ -622,6 +622,52 @@ def topic_is_novel(topic: str) -> bool:
     return not (slug_exists(slug) or slug_too_similar(slug))
 
 
+# Valid internal URL roots — the first path segment of any relative link must
+# be one of these, else the link is invented/broken and gets unwrapped. Covers
+# the blog categories + real hub/static routes on the site.
+_VALID_INTERNAL_ROOTS = {
+    # blog category slugs (CYCLE_ORDER)
+    "indian-students-abroad", "top-universities", "scholarship",
+    "education-loan", "student-accommodation", "travel-essentials",
+    # real hub / static / programmatic routes
+    "best-education-loans", "tools", "scholarships", "study-in", "university",
+    "courses", "test-prep", "loan-portal", "latest", "about", "contact",
+    "advertise", "admission-stories", "free-guides", "author", "tag",
+    "admissions", "cities", "news", "featured", "general",
+}
+
+
+def sanitize_links(html: str):
+    """
+    Unwrap broken/invented internal links that the model sometimes inserts —
+    e.g. /move-out, /night, /apply-uk-visa), or paths scraped from other
+    universities' sites (/south-asia-programme/en/). These create 404s and
+    hurt SEO. Keeps all external links (http/mailto/#) and all VALID internal
+    links; only broken relative links are unwrapped to plain text.
+    Returns (clean_html, num_unwrapped).
+    """
+    import re as _re
+    removed = 0
+
+    def _fix(m):
+        nonlocal removed
+        href = (m.group(1) or "").strip()
+        text = m.group(2)
+        # Keep external links, anchors, mailto/tel
+        if _re.match(r"^(https?:|mailto:|tel:|#)", href, _re.I):
+            return m.group(0)
+        if href.startswith("/"):
+            first = href.strip("/").split("/")[0].split("?")[0].split("#")[0]
+            if first == "" or first in _VALID_INTERNAL_ROOTS:
+                return m.group(0)            # homepage or a real internal route
+        removed += 1                          # invented/broken → keep text, drop link
+        return text
+
+    clean = _re.sub(r'<a\b[^>]*\bhref=["\']([^"\']*)["\'][^>]*>(.*?)</a>',
+                    _fix, html, flags=_re.I | _re.S)
+    return clean, removed
+
+
 def publish_post(post_data: dict, category_slug: str, image: dict | None) -> dict:
     # Log what fields we actually got from Claude (helps diagnose missing data)
     log.info(f"  Claude returned keys: {sorted(post_data.keys())}")
@@ -676,6 +722,11 @@ def publish_post(post_data: dict, category_slug: str, image: dict | None) -> dic
     # The blog post page renders featured_image_url separately at the top.
     # Embedding it again here causes the image to appear twice.
     full_content = intro + "\n" + body if intro else body
+
+    # Strip invented/broken internal links (they 404 and hurt SEO)
+    full_content, _broken = sanitize_links(full_content)
+    if _broken:
+        log.info(f"  🧹 Unwrapped {_broken} broken/invented internal link(s)")
 
     record = {
         "title":                 post_data["title"],
