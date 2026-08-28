@@ -108,7 +108,12 @@ export async function POST(req: NextRequest) {
         : r.status === 400 ? "bad_request"
         : "upstream";
       return NextResponse.json(
-        { error: "Priya is temporarily unavailable. Please try again shortly.", hint, provider },
+        {
+          error: "Priya is temporarily unavailable. Please try again shortly.",
+          hint, provider,
+          // Safe upstream detail (provider error text, no secrets) for debugging.
+          detail: String(r.msg).slice(0, 300),
+        },
         { status: 503 },
       );
     }
