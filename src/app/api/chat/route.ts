@@ -41,7 +41,7 @@ function pickProvider(): "gemini" | "anthropic" | null {
 // ── Google Gemini (free tier) ────────────────────────────────────────────
 async function callGemini(messages: Msg[]): Promise<Result> {
   const key = process.env.GEMINI_API_KEY!;
-  const model = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+  const model = process.env.GEMINI_MODEL || "gemini-3.6-flash";
   const contents = messages.slice(-10).map((m) => ({
     role: m.role === "assistant" ? "model" : "user", // Gemini uses "model", not "assistant"
     parts: [{ text: String(m.content ?? "") }],
