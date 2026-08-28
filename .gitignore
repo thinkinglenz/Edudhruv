@@ -91,3 +91,5 @@ automation/.prune-backup-*.json
 # Outreach — contact emails & send-log are PII; never commit them
 automation/outreach_contacts.json
 automation/.outreach-sent.json
+
+automation/.outreach-cron.log

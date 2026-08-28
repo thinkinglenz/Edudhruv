@@ -120,6 +120,11 @@ def main():
     if not DRY_RUN and not RESEND_API_KEY:
         print("RESEND_API_KEY not set — aborting."); return
 
+    # BATCH_SIZE limits how many NEW emails go out per run (0 = no limit).
+    # The scheduled job uses this to send a small batch each time and pace the
+    # whole list over days — protecting the domain's sending reputation.
+    batch = int(os.getenv("BATCH_SIZE", "0"))
+
     new = 0
     for c in contacts:
         email = (c.get("email") or "").strip().lower()
@@ -128,11 +133,14 @@ def main():
         if not email or "@" not in email:
             print(f"  skip (bad email): {c}"); continue
         if email in sent:
-            print(f"  skip (already emailed): {email}"); continue
+            continue  # already emailed (or bounced) — skip silently
 
         html = BODY_TEMPLATE.format(name=name, site=site)
         if DRY_RUN:
             print(f"  WOULD SEND → {name} <{email}> ({site})")
+            new += 1
+            if batch and new >= batch:
+                break
             continue
         try:
             send_resend(email, SUBJECT, html)
@@ -140,11 +148,18 @@ def main():
             print(f"  ✅ sent → {email}")
             with open(SENT_LOG, "w") as f:
                 json.dump(sorted(sent), f, indent=2)
+            if batch and new >= batch:
+                print(f"  (batch limit {batch} reached — stopping for this run)")
+                break
             time.sleep(DELAY)  # space out for deliverability
         except Exception as e:
             print(f"  ❌ failed → {email}: {e}")
 
-    print(f"Done. {'(dry run)' if DRY_RUN else f'{new} newly sent'}.")
+    remaining = sum(1 for c in contacts
+                    if (c.get("email") or "").strip().lower() not in sent
+                    and "@" in (c.get("email") or ""))
+    print(f"Done. {'(dry run)' if DRY_RUN else f'{new} newly sent'}. "
+          f"{remaining} still remaining in the list.")
 
 
 if __name__ == "__main__":
