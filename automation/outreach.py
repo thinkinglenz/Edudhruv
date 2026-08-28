@@ -28,6 +28,17 @@ import os
 import time
 import urllib.request
 
+# Load automation/.env (gitignored) if present, so the API key lives in a local
+# file — never in shell history or chat.
+_HERE0 = os.path.dirname(os.path.abspath(__file__))
+_ENVF = os.path.join(_HERE0, ".env")
+if os.path.exists(_ENVF):
+    for _line in open(_ENVF):
+        _line = _line.strip()
+        if _line and not _line.startswith("#") and "=" in _line:
+            _k, _v = _line.split("=", 1)
+            os.environ.setdefault(_k.strip(), _v.strip().strip('"').strip("'"))
+
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 # MUST be a verified domain sender in Resend, else it lands in spam.
 FROM = os.getenv("RESEND_FROM", "EduDhruv <hello@edudhruv.com>")
@@ -89,7 +100,10 @@ def send_resend(to, subject, html):
     req = urllib.request.Request(
         "https://api.resend.com/emails", data=payload, method="POST",
         headers={"Authorization": f"Bearer {RESEND_API_KEY}",
-                 "Content-Type": "application/json"})
+                 "Content-Type": "application/json",
+                 # Cloudflare (in front of Resend) blocks the default Python-urllib
+                 # signature with a 403/1010; a normal UA gets through.
+                 "User-Agent": "Mozilla/5.0 (compatible; EduDhruv-Outreach/1.0)"})
     with urllib.request.urlopen(req, timeout=20) as r:
         return json.loads(r.read())
 
