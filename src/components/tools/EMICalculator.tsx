@@ -146,7 +146,7 @@ export default function EMICalculator() {
                   className="inline-flex items-center gap-1 bg-white text-gray-900 font-bold px-5 py-3 rounded-xl whitespace-nowrap">
               Compare lenders →
             </Link>
-            <Link href="/loan-portal"
+            <Link href="/free-counselling"
                   className="inline-flex items-center gap-1 border-2 border-white text-white font-bold px-5 py-3 rounded-xl whitespace-nowrap">
               💬 Talk to Priya
             </Link>

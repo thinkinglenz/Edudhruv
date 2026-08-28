@@ -39,7 +39,7 @@ export default function ScholarshipsWidget({ scholarships }: Props) {
 
       <p className="text-center text-xs text-gray-400 mt-6">
         💡 New 100% scholarship added every day. Bookmark this page or{" "}
-        <Link href="/loan-portal" className="font-semibold hover:underline" style={{ color: "#3AAFE5" }}>
+        <Link href="/free-counselling" className="font-semibold hover:underline" style={{ color: "#3AAFE5" }}>
           chat with Priya
         </Link>{" "}
         to get personalised matches.

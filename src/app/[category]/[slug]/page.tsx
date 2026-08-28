@@ -297,7 +297,7 @@ export default async function PostPage({
               <h3 className="font-bold mb-1" style={{ color: "#3AAFE5" }}>Free Guidance</h3>
               <p className="text-xs text-gray-500 mb-4">Talk to our counsellor Priya — no fees, ever.</p>
               <Link
-                href="/loan-portal"
+                href="/free-counselling"
                 className="block text-center text-white text-sm font-semibold py-2.5 rounded-lg transition-opacity hover:opacity-90"
                 style={{ background: "#3AAFE5" }}
               >

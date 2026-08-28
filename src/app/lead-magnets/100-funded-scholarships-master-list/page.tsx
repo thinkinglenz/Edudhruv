@@ -169,7 +169,7 @@ export default function ScholarshipsMasterListGuide() {
           <li>1. Filter by your target country (sections below)</li>
           <li>2. Apply to <strong>5-8 scholarships in parallel</strong> — Indian students typically win 1 in 6 applications</li>
           <li>3. Start <strong>14-18 months</strong> before your intended start (deadlines fall earlier than universities)</li>
-          <li>4. For doubts, chat with Priya (free AI counsellor) at <strong>edudhruv.com/loan-portal</strong></li>
+          <li>4. For doubts, chat with Priya (free AI counsellor) at <strong>edudhruv.com/free-counselling</strong></li>
         </ul>
       </section>
 

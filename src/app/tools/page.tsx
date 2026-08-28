@@ -151,7 +151,7 @@ export default function ToolsPage() {
         <p className="text-white/90 max-w-2xl">
           Scholarship eligibility checker · University admit chance estimator · GRE/GMAT score → university predictor ·
           Visa fee calculator. Bookmark this page or{" "}
-          <Link href="/loan-portal" className="underline">talk to Priya</Link> for personalised guidance.
+          <Link href="/free-counselling" className="underline">talk to Priya</Link> for personalised guidance.
         </p>
       </section>
     </div>

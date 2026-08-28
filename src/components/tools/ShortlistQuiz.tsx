@@ -228,7 +228,7 @@ export default function ShortlistQuiz() {
           )}
 
           <div className="flex flex-col sm:flex-row gap-2 mt-5">
-            <Link href="/loan-portal"
+            <Link href="/free-counselling"
                   className="flex-1 inline-flex items-center justify-center text-white font-bold px-5 py-3 rounded-lg"
                   style={{ background: "#3AAFE5" }}>
               💬 Talk to Priya for personalised help

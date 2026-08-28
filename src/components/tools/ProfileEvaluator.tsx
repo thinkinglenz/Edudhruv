@@ -238,7 +238,7 @@ export default function ProfileEvaluator() {
       <div className="rounded-2xl p-6 sm:p-8 text-white" style={{ background: "linear-gradient(135deg, #3AAFE5 0%, #F5A71A 100%)" }}>
         <h3 className="text-xl sm:text-2xl font-extrabold mb-2">Want a personalised improvement plan?</h3>
         <p className="text-white/90 mb-5">Chat with Priya for tailored advice on universities to target, scholarships to apply for, and SOP review.</p>
-        <Link href="/loan-portal"
+        <Link href="/free-counselling"
               className="inline-flex items-center bg-white text-gray-900 font-bold px-5 py-3 rounded-xl">
           💬 Talk to Priya — Free →
         </Link>

@@ -371,7 +371,7 @@ export default async function CountryPage({ params }: { params: { country: strin
         <p className="text-white/90 mb-5 max-w-xl mx-auto">
           Chat with Priya — our AI counsellor — for a free personalised study + loan plan in 2 minutes.
         </p>
-        <Link href="/loan-portal"
+        <Link href="/free-counselling"
               className="inline-flex items-center gap-2 bg-white text-gray-900 font-bold px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors">
           💬 Talk to Priya — Free →
         </Link>

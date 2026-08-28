@@ -86,7 +86,7 @@ export default function SOPSamplesLibrary() {
       <footer className="mt-12 pt-6 border-t-2 text-center" style={{ borderColor: "#3AAFE5" }}>
         <p className="font-bold text-gray-900 text-lg mb-1">Need feedback on your own draft?</p>
         <p className="text-sm text-gray-600 mb-3">
-          Chat with Priya (free AI counsellor) for SOP review + improvement suggestions at <strong>edudhruv.com/loan-portal</strong>
+          Chat with Priya (free AI counsellor) for SOP review + improvement suggestions at <strong>edudhruv.com/free-counselling</strong>
         </p>
         <p className="text-xs text-gray-500 print:text-[10px]">
           © EduDhruv 2026 · Free for personal use · Not for commercial redistribution

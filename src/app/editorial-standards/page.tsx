@@ -128,7 +128,7 @@ export default function EditorialStandardsPage() {
       <ul>
         <li><strong>Email:</strong> <a href="mailto:edudruv@gmail.com">edudruv@gmail.com</a></li>
         <li><strong>Contact form:</strong> <Link href="/contact">/contact</Link></li>
-        <li><strong>Free counselling:</strong> <Link href="/loan-portal">Chat with Priya</Link></li>
+        <li><strong>Free counselling:</strong> <Link href="/free-counselling">Chat with Priya</Link></li>
       </ul>
 
       <hr className="my-12" />

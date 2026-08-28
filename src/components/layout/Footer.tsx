@@ -61,7 +61,7 @@ export default function Footer() {
           <h3 className="text-white font-semibold mb-3 text-sm uppercase tracking-wider">Get Help</h3>
           <p className="text-sm text-gray-400 mb-4">Free guidance from our education experts. No fees ever.</p>
           <Link
-            href="/loan-portal"
+            href="/free-counselling"
             className="inline-block bg-brand text-white text-sm font-semibold px-5 py-2.5 rounded-lg hover:bg-brand-dark transition-colors"
           >
             Talk to Priya →

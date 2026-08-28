@@ -78,7 +78,7 @@ export default function LenderCard({ lender: l }: Props) {
         {/* CTAs */}
         <div className="flex flex-col sm:flex-row gap-2">
           <Link
-            href="/loan-portal"
+            href="/free-counselling"
             className="flex-1 inline-flex items-center justify-center gap-1 text-white text-sm font-bold px-5 py-3 rounded-lg transition-opacity hover:opacity-90"
             style={{ background: l.logoColor }}
           >

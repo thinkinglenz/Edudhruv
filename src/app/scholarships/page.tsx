@@ -91,7 +91,7 @@ export default async function ScholarshipsIndexPage() {
             Chat with Priya — our AI counsellor — to find scholarships matched to your profile,
             course, and budget.
           </p>
-          <Link href="/loan-portal"
+          <Link href="/free-counselling"
             className="inline-block text-white font-bold px-7 py-3 rounded-xl shadow"
             style={{ background: "#3AAFE5" }}>
             Chat with Priya →

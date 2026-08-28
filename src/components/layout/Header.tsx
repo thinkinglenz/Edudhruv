@@ -61,7 +61,7 @@ export default function Header() {
             <SearchTrigger compact />
           </div>
           <Link
-            href="/loan-portal"
+            href="/free-counselling"
             className="hidden sm:inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-brand-dark transition-colors shadow-sm whitespace-nowrap"
           >
             Get Free Help →
@@ -100,7 +100,7 @@ export default function Header() {
             📣 Advertise with us
           </Link>
           <Link
-            href="/loan-portal"
+            href="/free-counselling"
             onClick={() => setOpen(false)}
             className="mt-3 block text-center bg-brand text-white text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-brand-dark transition-colors"
           >

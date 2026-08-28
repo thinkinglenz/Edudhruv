@@ -42,7 +42,7 @@ export default function StaticPageLayout({ page }: Props) {
               Get free expert guidance — education loans, scholarships, university selection.
             </p>
             <Link
-              href="/loan-portal"
+              href="/free-counselling"
               className="inline-block bg-white border-2 font-semibold px-6 py-2.5 rounded-lg text-sm hover:bg-blue-50 transition-colors"
               style={{ borderColor: "#3AAFE5", color: "#3AAFE5" }}
             >

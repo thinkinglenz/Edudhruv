@@ -275,7 +275,7 @@ export default function TestPrepPage({ params }: { params: { test: string } }) {
         <p className="text-white/90 mb-5 max-w-xl mx-auto">
           Get personalised guidance on test prep, university shortlisting, and scholarships from Priya — free AI counsellor.
         </p>
-        <Link href="/loan-portal"
+        <Link href="/free-counselling"
               className="inline-flex items-center gap-2 bg-white text-gray-900 font-bold px-6 py-3 rounded-xl">
           💬 Talk to Priya — Free →
         </Link>

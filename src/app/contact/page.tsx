@@ -105,7 +105,7 @@ export default function ContactPage() {
               Chat with Priya — our free AI counsellor — for instant guidance on loans, scholarships, or universities.
             </p>
             <Link
-              href="/loan-portal"
+              href="/free-counselling"
               className="block text-center text-white font-semibold py-2.5 px-4 rounded-lg text-sm hover:opacity-90 transition-opacity"
               style={{ background: "#3AAFE5" }}
             >

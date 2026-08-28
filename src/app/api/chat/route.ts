@@ -18,7 +18,7 @@ Key knowledge:
 - Processing time: 2-6 weeks for secured loans, 4-8 weeks for unsecured
 - Collateral threshold: Most banks require collateral above ₹40L
 
-If a student seems ready, suggest: "Fill in your details on this page and I'll have a senior counsellor call you within 24 hours!"`;
+If a student seems ready, suggest: "Just share your name, phone and email at edudhruv.com/free-counselling and a senior counsellor will call you within 24 hours — it's free!"`;
 
 export async function POST(req: NextRequest) {
   try {

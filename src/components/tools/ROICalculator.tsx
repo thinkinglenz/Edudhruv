@@ -226,7 +226,7 @@ export default function ROICalculator() {
                 className="inline-flex items-center justify-center border-2 border-white text-white font-bold px-5 py-3 rounded-xl">
             🎓 Browse Scholarships
           </Link>
-          <Link href="/loan-portal"
+          <Link href="/free-counselling"
                 className="inline-flex items-center justify-center bg-white/20 text-white font-bold px-5 py-3 rounded-xl">
             💬 Talk to Priya
           </Link>

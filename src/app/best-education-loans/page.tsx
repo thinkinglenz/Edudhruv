@@ -301,7 +301,7 @@ export default function BestEducationLoansPage() {
           Chat with Priya — our AI counsellor — for a free personalised recommendation in 2 minutes.
         </p>
         <Link
-          href="/loan-portal"
+          href="/free-counselling"
           className="inline-flex items-center gap-2 bg-white text-gray-900 font-bold px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors"
         >
           💬 Talk to Priya — Free →

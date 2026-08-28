@@ -147,7 +147,7 @@ export default function LoanDecisionTree() {
 
         <div className="flex flex-col sm:flex-row gap-2">
           <Link
-            href="/loan-portal"
+            href="/free-counselling"
             className="flex-1 inline-flex items-center justify-center text-white font-bold px-5 py-3 rounded-lg"
             style={{ background: "#3AAFE5" }}
           >

@@ -186,7 +186,7 @@ export default function ApplicationTimeline() {
         <h3 className="text-xl sm:text-2xl font-extrabold mb-2">Need help with any of these steps?</h3>
         <p className="text-white/90 mb-5">Priya (free AI counsellor) can guide you through SOPs, scholarship picks, loan options, and more.</p>
         <div className="flex flex-col sm:flex-row gap-2">
-          <Link href="/loan-portal"
+          <Link href="/free-counselling"
                 className="inline-flex items-center justify-center bg-white text-gray-900 font-bold px-5 py-3 rounded-xl">
             💬 Talk to Priya — Free
           </Link>
