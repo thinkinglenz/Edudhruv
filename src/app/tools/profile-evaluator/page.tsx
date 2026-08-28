@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import ProfileEvaluator from "@/components/tools/ProfileEvaluator";
+import EmbedBox from "@/components/tools/EmbedBox";
 import { breadcrumbSchema } from "@/lib/seo-schemas";
 
 const URL = "https://www.edudhruv.com/tools/profile-evaluator";
@@ -80,6 +81,13 @@ export default function ProfileEvaluatorPage() {
       </header>
 
       <ProfileEvaluator />
+
+      <EmbedBox
+        embedUrl="https://www.edudhruv.com/embed/profile-evaluator"
+        toolUrl={URL}
+        title="Study Abroad Profile Evaluator"
+        height={950}
+      />
 
       <section className="my-12">
         <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-5">Frequently Asked Questions</h2>

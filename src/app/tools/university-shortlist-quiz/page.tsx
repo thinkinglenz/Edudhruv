@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import ShortlistQuiz from "@/components/tools/ShortlistQuiz";
+import EmbedBox from "@/components/tools/EmbedBox";
 import { breadcrumbSchema } from "@/lib/seo-schemas";
 
 const URL = "https://www.edudhruv.com/tools/university-shortlist-quiz";
@@ -79,6 +80,13 @@ export default function ShortlistQuizPage() {
       </header>
 
       <ShortlistQuiz />
+
+      <EmbedBox
+        embedUrl="https://www.edudhruv.com/embed/university-shortlist-quiz"
+        toolUrl={URL}
+        title="University Shortlist Quiz"
+        height={950}
+      />
 
       <section className="my-12">
         <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-5">Frequently Asked Questions</h2>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import ApplicationTimeline from "@/components/tools/ApplicationTimeline";
+import EmbedBox from "@/components/tools/EmbedBox";
 import { breadcrumbSchema } from "@/lib/seo-schemas";
 
 const URL = "https://www.edudhruv.com/tools/application-timeline";
@@ -79,6 +80,13 @@ export default function ApplicationTimelinePage() {
       </header>
 
       <ApplicationTimeline />
+
+      <EmbedBox
+        embedUrl="https://www.edudhruv.com/embed/application-timeline"
+        toolUrl={URL}
+        title="Study Abroad Application Timeline"
+        height={950}
+      />
 
       <section className="my-12">
         <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-5">Frequently Asked Questions</h2>
