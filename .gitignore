@@ -87,3 +87,7 @@ automation/venv/
 
 # Local-only content-prune restore backups (never commit — contain post data)
 automation/.prune-backup-*.json
+
+# Outreach — contact emails & send-log are PII; never commit them
+automation/outreach_contacts.json
+automation/.outreach-sent.json
