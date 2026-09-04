@@ -792,6 +792,32 @@ def trigger_vercel_revalidation(category_slug: str, post_slug: str):
 
 # ─── MAIN ─────────────────────────────────────────────────────────────────
 
+def post_to_facebook(title: str, excerpt: str, url: str):
+    """Publish the new post to the EduDhruv Facebook Page directly (in-house,
+    free, permanent page token). Fail-safe: no-op if creds unset, never crashes
+    the run. Includes a real caption (title + excerpt) so posts aren't bare links.
+    """
+    token = os.getenv("FB_PAGE_ACCESS_TOKEN")
+    page = os.getenv("FB_PAGE_ID")
+    if not token or not page:
+        log.info("  (skipping Facebook — FB_PAGE_ACCESS_TOKEN/FB_PAGE_ID not set)")
+        return
+    message = f"{title}\n\n{excerpt}\n\nRead the full guide 👇\n{url}"
+    try:
+        body = urllib.parse.urlencode({
+            "message": message, "link": url, "access_token": token,
+        }).encode()
+        req = urllib.request.Request(
+            f"https://graph.facebook.com/v21.0/{page}/feed",
+            data=body, method="POST",
+            headers={"User-Agent": "Mozilla/5.0 (compatible; EduDhruvBot/1.0)"})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            res = json.loads(r.read())
+        log.info(f"  📘 Posted to Facebook page (id {res.get('id')})")
+    except Exception as e:
+        log.warning(f"  Could not post to Facebook: {e}")
+
+
 def main():
     log.info("═" * 50)
     log.info("EduDhruv Evergreen Agent — Supabase Edition")
@@ -865,8 +891,14 @@ def main():
     log.info("Triggering Vercel revalidation...")
     trigger_vercel_revalidation(category_slug, post_slug)
 
+    post_url = f"https://www.edudhruv.com/{category_slug}/{post_slug}"
+
+    # Auto-post to the EduDhruv Facebook Page (in-house, permanent token)
+    log.info("Posting to Facebook page...")
+    post_to_facebook(post_data["title"], post_data.get("excerpt", "") or "", post_url)
+
     log.info(f"✅ Published: {post_data['title']}")
-    log.info(f"   URL: https://www.edudhruv.com/{category_slug}/{post_slug}")
+    log.info(f"   URL: {post_url}")
     log.info(f"   Cycle: {cycle + 1}")
 
 
