@@ -516,37 +516,53 @@ title, slug, meta_title, meta_description, focus_keyword, excerpt, intro, body, 
 The `body` field MUST be 5000-8000 characters (≈ 1200-1600 words) of HTML.
 If your body is shorter than 4500 characters, the article will be REJECTED.
 
-Structure your body like this (and verify length BEFORE submitting):
+Structure your body like this (and verify length BEFORE submitting).
+
+★ WRITE FOR AI SEARCH TOO (ChatGPT, Perplexity, Google AI Overviews): start
+EVERY <h2> section with a DIRECT, SELF-CONTAINED answer of 1-2 sentences (under
+~300 characters) that still makes complete sense if an AI quotes it on its own,
+out of context. That opening sentence is the snippet AI assistants lift and
+cite — put the concrete answer/number FIRST, then expand. Include at least one
+comparison <table> of real data.
 
 <h2>First major section title</h2>
-<p>Paragraph 1 (3-5 sentences with specific facts, numbers, examples)</p>
+<p><strong>The short answer:</strong> a 1-2 sentence self-contained answer with the key fact/number, under 300 characters, quotable on its own.</p>
+<p>Paragraph with specific facts, numbers, examples (3-5 sentences)</p>
 <p>Paragraph 2 (3-5 sentences)</p>
-<p>Paragraph 3 (3-5 sentences)</p>
 
 <h2>Second major section title</h2>
-<p>Paragraph...</p>
+<p><strong>The short answer:</strong> one-sentence direct takeaway with a number.</p>
 <ul>
   <li><strong>Point 1:</strong> Detailed explanation</li>
   <li><strong>Point 2:</strong> Detailed explanation</li>
   <li><strong>Point 3:</strong> Detailed explanation</li>
 </ul>
-<p>More detail...</p>
 
-<h2>Third major section title</h2>
+<h2>Third major section title — include a comparison TABLE of real data here</h2>
+<p><strong>The short answer:</strong> one-sentence direct takeaway.</p>
+<table>
+  <thead><tr><th>Option</th><th>Key figure ({YEAR})</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>Real example 1</td><td>Real number</td><td>Short note</td></tr>
+    <tr><td>Real example 2</td><td>Real number</td><td>Short note</td></tr>
+    <tr><td>Real example 3</td><td>Real number</td><td>Short note</td></tr>
+  </tbody>
+</table>
 <p>...with internal link: <a href="/education-loan/">education loan</a>...</p>
 
 <h2>Fourth major section</h2>
+<p><strong>The short answer:</strong> one-sentence direct takeaway.</p>
 <p>...</p>
 
 <h2>Frequently Asked Questions</h2>
 <h3>Question 1?</h3>
-<p>Detailed answer (3-4 sentences).</p>
+<p>Put the direct answer in the FIRST sentence, then detail (3-4 sentences total).</p>
 <h3>Question 2?</h3>
-<p>Detailed answer.</p>
+<p>Direct answer first, then detail.</p>
 <h3>Question 3?</h3>
-<p>Detailed answer.</p>
+<p>Direct answer first, then detail.</p>
 <h3>Question 4?</h3>
-<p>Detailed answer.</p>
+<p>Direct answer first, then detail.</p>
 
 ═══ OTHER REQUIREMENTS ═══
 
@@ -818,6 +834,69 @@ def post_to_facebook(title: str, excerpt: str, url: str):
         log.warning(f"  Could not post to Facebook: {e}")
 
 
+def post_to_instagram(title: str, excerpt: str, image_url: str):
+    """Publish to the EduDhruv Instagram Business account (@edudhruv) via the
+    IG Content Publishing API (2-step: create container → publish). Fail-safe.
+    IG requires an image and does NOT allow clickable links in captions, so we
+    point to 'link in bio'. Needs FB_PAGE_ACCESS_TOKEN (with
+    instagram_content_publish scope) + FB_IG_USER_ID.
+    """
+    token = os.getenv("FB_PAGE_ACCESS_TOKEN")
+    ig = os.getenv("FB_IG_USER_ID")
+    if not token or not ig:
+        log.info("  (skipping Instagram — FB_IG_USER_ID / token not set)")
+        return
+    if not image_url:
+        log.info("  (skipping Instagram — no image, IG requires one)")
+        return
+    caption = (f"{title}\n\n{excerpt}\n\n🔗 Full guide — link in bio (edudhruv.com)\n\n"
+               "#studyabroad #studyabroadconsultants #educationloan #scholarships "
+               "#indianstudents #studyabroad2027")
+    G = "https://graph.facebook.com/v21.0"
+    ua = {"User-Agent": "Mozilla/5.0 (compatible; EduDhruvBot/1.0)"}
+    try:
+        # 1) create media container
+        b1 = urllib.parse.urlencode({"image_url": image_url, "caption": caption,
+                                     "access_token": token}).encode()
+        r1 = urllib.request.urlopen(
+            urllib.request.Request(f"{G}/{ig}/media", data=b1, method="POST", headers=ua), timeout=30)
+        cid = json.loads(r1.read())["id"]
+        time.sleep(3)  # give IG a moment to fetch the image
+        # 2) publish the container
+        b2 = urllib.parse.urlencode({"creation_id": cid, "access_token": token}).encode()
+        r2 = urllib.request.urlopen(
+            urllib.request.Request(f"{G}/{ig}/media_publish", data=b2, method="POST", headers=ua), timeout=30)
+        res = json.loads(r2.read())
+        log.info(f"  📸 Posted to Instagram (id {res.get('id')})")
+    except Exception as e:
+        log.warning(f"  Could not post to Instagram: {e}")
+
+
+def post_to_telegram(title: str, excerpt: str, url: str, image_url: str = ""):
+    """Post the new blog post to the EduDhruv Telegram channel via the Bot API.
+    Fail-safe. Plain text (no Markdown) so special characters never break it;
+    Telegram auto-links the raw URL."""
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat = os.getenv("TELEGRAM_CHANNEL_ID")
+    if not token or not chat:
+        log.info("  (skipping Telegram — TELEGRAM_BOT_TOKEN/CHANNEL_ID not set)")
+        return
+    text = f"{title}\n\n{excerpt}\n\n👉 Read the full guide: {url}"
+    api = f"https://api.telegram.org/bot{token}"
+    try:
+        if image_url:
+            data = urllib.parse.urlencode({
+                "chat_id": chat, "photo": image_url, "caption": text[:1024],
+            }).encode()
+            urllib.request.urlopen(urllib.request.Request(f"{api}/sendPhoto", data=data, method="POST"), timeout=20)
+        else:
+            data = urllib.parse.urlencode({"chat_id": chat, "text": text}).encode()
+            urllib.request.urlopen(urllib.request.Request(f"{api}/sendMessage", data=data, method="POST"), timeout=20)
+        log.info("  ✈️ Posted to Telegram channel")
+    except Exception as e:
+        log.warning(f"  Could not post to Telegram: {e}")
+
+
 def main():
     log.info("═" * 50)
     log.info("EduDhruv Evergreen Agent — Supabase Edition")
@@ -896,6 +975,16 @@ def main():
     # Auto-post to the EduDhruv Facebook Page (in-house, permanent token)
     log.info("Posting to Facebook page...")
     post_to_facebook(post_data["title"], post_data.get("excerpt", "") or "", post_url)
+
+    # Auto-post to the EduDhruv Instagram Business account (needs featured image)
+    log.info("Posting to Instagram...")
+    post_to_instagram(post_data["title"], post_data.get("excerpt", "") or "",
+                      image.get("url") if image else "")
+
+    # Auto-post to the EduDhruv Telegram channel
+    log.info("Posting to Telegram...")
+    post_to_telegram(post_data["title"], post_data.get("excerpt", "") or "",
+                     post_url, image.get("url") if image else "")
 
     log.info(f"✅ Published: {post_data['title']}")
     log.info(f"   URL: {post_url}")
