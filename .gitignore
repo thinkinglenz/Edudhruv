@@ -93,3 +93,6 @@ automation/outreach_contacts.json
 automation/.outreach-sent.json
 
 automation/.outreach-cron.log
+automation/.outreach-followup-sent.json
+automation/pitch_contacts.json
+automation/.pitch-sent.json
