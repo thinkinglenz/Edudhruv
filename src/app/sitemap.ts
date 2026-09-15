@@ -29,6 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/tools/education-loan-emi-calculator`,                                changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE}/tools/gpa-converter`,                                                changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE}/tools/country-match-quiz`,                                           changeFrequency: "monthly", priority: 0.9 },
+    { url: `${BASE}/tools/cost-of-living-comparison`,                                     changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE}/tools/cost-of-studying-abroad-calculator`,                           changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE}/tools/study-abroad-roi-calculator`,                                   changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE}/tools/university-shortlist-quiz`,                                     changeFrequency: "monthly", priority: 0.9 },
