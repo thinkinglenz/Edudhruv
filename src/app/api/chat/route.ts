@@ -54,7 +54,8 @@ async function callGemini(messages: Msg[]): Promise<Result> {
       body: JSON.stringify({
         system_instruction: { parts: [{ text: PRIYA_SYSTEM }] },
         contents,
-        generationConfig: { maxOutputTokens: 500, temperature: 0.7 },
+        // No temperature/top_p/top_k: ignored since Gemini 3.6, rejected by upcoming models.
+        generationConfig: { maxOutputTokens: 500 },
       }),
     },
   );
