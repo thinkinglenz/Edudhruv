@@ -55,14 +55,24 @@ async function callGemini(messages: Msg[]): Promise<Result> {
         system_instruction: { parts: [{ text: PRIYA_SYSTEM }] },
         contents,
         // No temperature/top_p/top_k: ignored since Gemini 3.6, rejected by upcoming models.
-        generationConfig: { maxOutputTokens: 500 },
+        // Gemini 3 thinks before answering, and the thinking counts against
+        // maxOutputTokens: at 500, every reply stopped after ~80 characters
+        // (9 Oct 2026, "…best options if you want a top-"). Room for both, and
+        // "low" thinking — a counsellor's reply needs judgement, not long reasoning.
+        generationConfig: {
+          maxOutputTokens: 2048,
+          ...(/^gemini-3/.test(model) ? { thinkingConfig: { thinkingLevel: "low" } } : {}),
+        },
       }),
     },
   );
   const data = await res.json();
   if (!res.ok) return { ok: false, status: res.status, msg: data?.error?.message || "Gemini error" };
-  const text = (data?.candidates?.[0]?.content?.parts || [])
+  const cand = data?.candidates?.[0];
+  const text = (cand?.content?.parts || [])
     .map((p: any) => p.text || "").join("");
+  // A reply that ran out of room is visible in the logs, not just to students.
+  if (cand?.finishReason === "MAX_TOKENS") console.warn("Priya gemini reply hit MAX_TOKENS", text.length, "chars");
   return { ok: true, text };
 }
 
