@@ -62,14 +62,31 @@ export async function getPostsByCategory(
   return { posts: data || [], total: count || 0 };
 }
 
+/**
+ * Thrown when Supabase cannot be reached, as distinct from a slug that has no
+ * post. The caller must not turn this into notFound().
+ *
+ * ListmyAI learned this the expensive way on 2026-10-11: a Supabase egress
+ * restriction made every query fail, each failure returned null, every page
+ * called notFound(), and tens of thousands of URLs served 404 to Google —
+ * which reads 404 as "drop this from the index". A 5xx means "try later" and
+ * leaves rankings alone.
+ */
+export class PostSourceUnavailable extends Error {}
+
 export async function getPostBySlug(slug: string): Promise<Post | null> {
   if (IS_MOCK) return MOCK_POSTS.find((p) => p.slug === slug) || null;
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("posts")
     .select("*")
     .eq("slug", slug)
     .eq("status", "published")
     .single();
+  // .single() reports "no rows" as an error too (PGRST116), so the code has to
+  // be checked: that one really is a missing post and should still 404.
+  if (error && error.code !== "PGRST116") {
+    throw new PostSourceUnavailable(error.message);
+  }
   return data || null;
 }
 
