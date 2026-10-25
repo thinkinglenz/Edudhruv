@@ -3,10 +3,14 @@ name: Evergreen Blog Agent
 on:
   # Once per day at 04:00 UTC (09:30 IST — mid-morning India).
   # Scholarship agent runs at 00:30 UTC, so this is 3.5h after — spread out.
-  schedule:
-    - cron: "0 4 * * *"
+  #
+  # PAUSED 2026-10-25 for the Google AdSense review window: a reviewer landing
+  # on a run of fresh, similar AI posts is the top "scaled content abuse" flag.
+  # Resume after approval by UNCOMMENTING the two lines below.
+  # schedule:
+  #   - cron: "0 4 * * *"
 
-  # Allow manual trigger
+  # Allow manual trigger (still works while paused — run from the Actions tab)
   workflow_dispatch:
     inputs:
       model:

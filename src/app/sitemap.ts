@@ -64,12 +64,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  // Tag pages — long-tail SEO + AI context
-  const tagPages: MetadataRoute.Sitemap = tags.map(({ slug }) => ({
-    url: `${BASE}/tag/${slug}`,
-    changeFrequency: "weekly" as const,
-    priority: 0.5,
-  }));
+  // Tag pages — long-tail SEO + AI context.
+  // Only list tags with real depth (3+ posts). Thin tags are noindexed in
+  // tag/[slug]/page.tsx, so listing them here would advertise noindexed URLs
+  // (inconsistent, and dilutes crawl budget on low-value pages).
+  const tagPages: MetadataRoute.Sitemap = tags
+    .filter(({ count }) => count >= 3)
+    .map(({ slug }) => ({
+      url: `${BASE}/tag/${slug}`,
+      changeFrequency: "weekly" as const,
+      priority: 0.5,
+    }));
 
   // Author pages — E-E-A-T signal
   const authorPages: MetadataRoute.Sitemap = AUTHORS.map(a => ({

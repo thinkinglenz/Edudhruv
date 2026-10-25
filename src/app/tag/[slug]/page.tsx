@@ -23,12 +23,21 @@ export async function generateStaticParams() {
   return tags.filter(t => t.count >= 1).map(t => ({ slug: t.slug }));
 }
 
+// A tag needs this many posts to be a real hub worth indexing. Thin tags
+// (1–2 posts) are near-duplicate aggregation pages — noindex them so they
+// don't count as "low-value content" (AdSense review + helpful-content system).
+// They stay `follow` so link equity still flows to the posts.
+const TAG_INDEX_THRESHOLD = 3;
+
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const label = slugToTagLabel(params.slug);
+  const posts = await getPostsByTag(params.slug);
+  const indexable = posts.length >= TAG_INDEX_THRESHOLD;
   return {
     title: `${label} — Articles & Guides`,
     description: `All EduDhruv guides tagged with ${label}. Updated regularly with the latest information for Indian students planning to study abroad.`,
     alternates: { canonical: `https://www.edudhruv.com/tag/${params.slug}` },
+    robots: { index: indexable, follow: true },
     openGraph: {
       title: `${label} — EduDhruv`,
       description: `Articles tagged ${label} — guidance for Indian students.`,
