@@ -10,7 +10,7 @@ import { getAllPostsPaginated } from "@/lib/all-posts";
 import { breadcrumbSchema } from "@/lib/seo-schemas";
 
 const URL = "https://www.edudhruv.com/latest";
-export const revalidate = 600;
+export const revalidate = 1800;
 
 export async function generateMetadata({ searchParams }: { searchParams: { page?: string } }): Promise<Metadata> {
   const page = parseInt(searchParams.page || "1");

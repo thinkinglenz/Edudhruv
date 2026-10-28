@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Strip console.* from production bundles (keep error/warn). These were
+  // flooding Vercel "Observability Events" on every invocation.
+  compiler: {
+    removeConsole: { exclude: ["error", "warn"] },
+  },
   images: {
     remotePatterns: [
       // Stock + CDN
@@ -46,6 +51,14 @@ const nextConfig = {
       { protocol: "https", hostname: "**.ac.nz" },         // New Zealand universities
       { protocol: "https", hostname: "**.edu.my" },        // Malaysia
     ],
+    // Cost controls: cache optimized images for 1 year, serve one modern format,
+    // and generate fewer size variants. Image Optimization was edudhruv's single
+    // biggest Vercel line (~$1.8/mo) from re-optimizing images across 500+
+    // bot-crawled pages. Keeps optimization (good for SEO), just far cheaper.
+    minimumCacheTTL: 31536000,
+    formats: ["image/webp"],
+    deviceSizes: [640, 828, 1080, 1920],
+    imageSizes: [96, 256, 384],
   },
 
   async headers() {

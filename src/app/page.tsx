@@ -12,7 +12,7 @@ import RotatingBanner, { ListMyAIBanner, ThinkingLenzBanner } from "@/components
 // Revalidate every 5 min as a fallback. The blog agent ALSO calls
 // /api/revalidate immediately after publishing, so new posts appear
 // instantly — this is just a safety net.
-export const revalidate = 300;
+export const revalidate = 3600;
 
 const SPONSORED_SLIDES: never[] = [];
 const HOMEPAGE_CATEGORIES = [

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://www.edudhruv.com/scholarships" },
 };
 
-export const revalidate = 600; // 10 min cache
+export const revalidate = 1800;
 
 export default async function ScholarshipsIndexPage() {
   const all = await getActiveScholarships();
