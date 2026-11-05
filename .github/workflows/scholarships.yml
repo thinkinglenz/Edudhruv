@@ -5,10 +5,9 @@ on:
   # (06:00 IST). This agent uses Sonnet 4.5 + web search — the priciest run —
   # and scholarship deadlines are months out, so daily discovery isn't needed.
   # ~66% cheaper than daily. Revert to "30 0 * * *" for daily.
-  # PAUSED 2026-10-25 for the Google AdSense review window (see evergreen.yml).
-  # Resume after approval by UNCOMMENTING the two lines below.
-  # schedule:
-  #   - cron: "30 0 */3 * *"
+  # Resumed 2026-11-05 (AdSense rejected; back to normal cadence — see evergreen.yml).
+  schedule:
+    - cron: "30 0 */3 * *"
   workflow_dispatch:
     inputs:
       model:
